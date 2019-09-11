@@ -1,1 +1,0 @@
-{"version":3,"sources":["index.js"],"names":["htmlFile"],"mappings":";AAAA,IAAIA,EAAW,kCAEf,OAAOA","file":"funwithcode.f6e36129.js","sourceRoot":"..","sourcesContent":["var htmlFile = \"code-doodle-1/doodle/index.html\";\n\nimport(htmlFile)\n"]}
