@@ -9,4 +9,4 @@ module.exports=function(t){return fetch(t).then(function(t){return t.text()})};
 },{}],0:[function(require,module,exports) {
 var b=require("z1Am");b.register("html",require("cUwr"));b.load([["index.html","Kx2w"]]).then(function(){require("Focm");});
 },{}]},{},[0], null)
-//# sourceMappingURL=/funwithcode.6e2ac991.js.map
+//# sourceMappingURL=/funwithcode/funwithcode.6e2ac991.js.map
