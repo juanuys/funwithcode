@@ -1,10 +1,12 @@
 {
-  "name": "code-doodle-1",
+  "name": "funwithcode",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "parcel index.html",
+    "dist": "parcel build index.html -d docs --public-url ./"
   },
   "author": "",
   "license": "MIT",
