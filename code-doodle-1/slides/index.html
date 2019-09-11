@@ -1,0 +1,251 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<meta name="description" content="Stepping through the creation of a code doodle.">
+		<meta name="author" content="Juan Matthys Uys">
+		<title>Code Doodle #1</title>
+
+		<link rel="stylesheet" href="css/reset.css">
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/solarized.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+<link rel="stylesheet" href="css/my/main.css">
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+
+				<section>
+					<h1>Code Doodle</h1>
+					<p>using HTML canvas</p>
+
+					<aside class="notes">
+						<p>welcome</p>
+
+						<p>we'll be building up a visualisation using HTML canvas and some javascript</p>
+
+						<p>it's something I like to do, sometimes just whipping something up for the kids</p>
+						<p>they love it: daddy, make it rainbow colours, make it bounce, etc</p>
+
+						<p>it's also a great introduction to coding, visual feedback</p>
+
+						<p>regardless, it feels like I'm in the 90s demoscene again</p>
+					</aside>
+				</section>
+
+				<section>
+					<p>Add a canvas element</p>
+					<pre><code class="hljs html" data-trim data-line-numbers="">
+								<canvas id="doodle">
+
+								</canvas>
+					</code></pre>
+				</section>
+
+				<section>
+					<p>Get the context</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="">
+							var canvas = document.getElementById('doodle');
+
+							canvas.width = window.innerWidth;
+							canvas.height = window.innerHeight;
+
+							var ctx = canvas.getContext('2d');
+					</code></pre>
+				</section>
+
+				<section>
+					<p>What other contexts are available?</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="6,8">
+							var canvas = document.getElementById('doodle');
+
+							canvas.width = window.innerWidth;
+							canvas.height = window.innerHeight;
+
+							var ctx = canvas.getContext('2d');
+
+							// also webgl, webgl2, bitmaprenderer
+					</code></pre>
+
+					<p>
+						canvas.getContext description at MDN
+					</p>
+					<p><a href="https://mzl.la/2lLy87l">https://mzl.la/2lLy87l</a></p>
+
+					<aside class="notes">
+						<p>webgl and webgl2 for 3d</p>
+
+						<p>and bitmaprenderer which is something completely different</p>
+
+						<p>we'll might revisit those in future videos</p>
+					</aside>
+				</section>
+
+
+				<section>
+					<p>Draw a line</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="">
+							ctx.lineWidth = 10;
+							ctx.strokeStyle = 'hsla(180, 100%, 50%, 1.0)';
+							ctx.beginPath();
+
+							// path starting point
+							ctx.moveTo(0, 0);
+
+							// path to here
+							ctx.lineTo(200, 200);
+
+							// draws the path with the current stroke style
+							ctx.stroke();
+					</code></pre>
+				</section>
+				<section data-background-iframe="doodle.html#1"></section>
+
+				<section>
+					<p>Draw another line</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="11,12">
+							ctx.lineWidth = 10;
+							ctx.strokeStyle = 'hsla(180, 100%, 50%, 1.0)';
+							ctx.beginPath();
+
+							// path starting point
+							ctx.moveTo(0, 0);
+
+							// path to here
+							ctx.lineTo(200, 200);
+
+							// path to here
+							ctx.lineTo(400, 100);
+
+							// draws the path with the current stroke style
+							ctx.stroke();
+					</code></pre>
+
+					<aside class="notes">
+						we're drawing an arm with an elbow at x 200 and y 200
+					</aside>
+				</section>
+				<section data-background-iframe="doodle.html#2"></section>
+
+
+				<section>
+					<p>Start animating</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="">
+							function step() {
+
+								ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+								// ...the code from before...
+
+								window.requestAnimationFrame(step);
+							}
+
+							window.requestAnimationFrame(step);
+					</code></pre>
+				</section>
+				<section>
+					<p>Change a colour</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="1,8,11">
+
+							var count = 0;
+
+							function step() {
+
+								ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+								// ...
+								ctx.strokeStyle = 'hsla(' + count + ', 100%, 50%, 1.0)';
+								// ...
+
+								count++;
+
+								window.requestAnimationFrame(step);
+							}
+					</code></pre>
+
+					<p>
+						hsla description at MDN
+					</p>
+					<p><a href="https://mzl.la/2kbzOXk">https://mzl.la/2kbzOXk</a></p>
+
+					<aside class="notes">
+						<p>The first argument to HSLA is the degrees, so our count will start at 0 which is red</p>
+
+						<p>when it loops around to 360 it turns red again, and so on</p>
+
+						<p>so, have a close look: red at 0 and then 360 again</p>
+					</aside>
+				</section>
+				<section data-background-iframe="doodle.html#3"></section>
+
+				<section>
+					<p>Change position</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="3,4">
+
+							ctx.moveTo(x - 200, y - 100);
+
+							var yCount = Math.sin((Math.PI / 180) * count)
+							ctx.lineTo(x, y + yCount * 100);
+
+							ctx.lineTo(x + 200, y);
+
+					</code></pre>
+
+					<aside class="notes">
+						<p>if we treat count as angle in degrees, then</p>
+
+						<p>Math.sin((Math.PI / 180) * count)</p>
+
+						<p>will give us values between -1 and 1</p>
+
+						<p>because we won't see the animation if it only moves one pixel up or down</p>
+
+						<p>now we'll see our arm's elbow moving up and down</p>
+					</aside>
+				</section>
+				<section data-background-iframe="doodle.html#4"></section>
+
+				<section>
+					<h1>The final code doodle</h1>
+					<p>add more lines</p>
+					<p>add more "elbows"</p>
+				</section>
+
+				<section data-background-iframe="doodle.html#5"></section>
+
+				<section>
+					<p>Find some more on the web</p>
+					<p>
+						e.g. <a href="http://codedoodl.es/">codedoodl.es</a>
+					</p>
+				</section>
+
+				<section data-background-iframe="http://codedoodl.es/" data-background-interactive>
+					<!-- <div style="position: absolute; width: 40%; right: 0; box-shadow: 0 1px 4px rgba(0,0,0,0.5), 0 5px 25px rgba(0,0,0,0.2); background-color: rgba(0, 0, 0, 0.9); color: #fff; padding: 20px; font-size: 20px; text-align: left;">
+						<h2>Iframe Backgrounds</h2>
+						<p>Since reveal.js runs on the web, you can easily embed other web content. Try interacting with the page in the background.</p>
+					</div> -->
+				</section>
+			</div>
+		</div>
+
+		<script src="js/reveal.js"></script>
+		<script src="js/my/index.js"></script>
+
+	</body>
+</html>
