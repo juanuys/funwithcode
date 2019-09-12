@@ -34,18 +34,29 @@
 					<h1>Code Doodle</h1>
 					<p>using HTML canvas</p>
 
+					<br/>
+					<br/>
+					<br/>
+
+					<p>Code for this doodle at</p>
+
+					<p>
+						<a href="https://github.com/juanuys/funwithcode/tree/master/code-doodle-1/doodle">https://github.com/juanuys/funwithcode</a>
+					</p>
+
 					<aside class="notes">
 						<p>welcome</p>
+						<p>I'm JUAN, this is funWithCode, and thanks for joining me</p>
 
 						<p>we'll be building up a visualisation using HTML canvas and some javascript</p>
 
-						<p>it's something I like to do, sometimes just whipping something up for the kids</p>
-						<p>they love it: daddy, make it rainbow colours, make it bounce, etc</p>
+						<p>If you see links like this one, don't worry - I'll put all links in the video description</p>
 
-						<p>it's also a great introduction to coding, visual feedback</p>
-
-						<p>regardless, it feels like I'm in the 90s demoscene again</p>
 					</aside>
+				</section>
+
+				<section>
+					<img height="800" src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bd/Margay_in_Costa_Rica.jpg/1280px-Margay_in_Costa_Rica.jpg"/>
 				</section>
 
 				<section>
@@ -55,6 +66,11 @@
 
 								</canvas>
 					</code></pre>
+
+					<aside class="notes">
+							<p>add a canvas tag to your HTML with any ID you like</p>
+
+						</aside>
 				</section>
 
 				<section>
@@ -67,6 +83,16 @@
 
 							var ctx = canvas.getContext('2d');
 					</code></pre>
+
+					<aside class="notes">
+							<p>then in the Javascript code get a handle on that canvas tag</p>
+							<p>on line 1 we reference the tag by id "doodle" as we specified in the HTML</p>
+
+							<p>on lines 3 and 4 we give the canvas the same width and height as the browser window</p>
+
+							<p>on line 6 we get a 2D canvas context which we'll be giving our draw commands</p>
+						</aside>
+
 				</section>
 
 				<section>
@@ -83,16 +109,18 @@
 					</code></pre>
 
 					<p>
-						canvas.getContext description at MDN
+						canvas.getContext
 					</p>
 					<p><a href="https://mzl.la/2lLy87l">https://mzl.la/2lLy87l</a></p>
 
 					<aside class="notes">
-						<p>webgl and webgl2 for 3d</p>
+						<p>What other context types are there?</p>
 
-						<p>and bitmaprenderer which is something completely different</p>
+						<p>there's webgl and webgl2 if you want to make 3D visualisations</p>
 
-						<p>we'll might revisit those in future videos</p>
+						<p>there's also bitmaprenderer, but that is something completely different</p>
+
+						<p>for our purposes, 2D will suffice</p>
 					</aside>
 				</section>
 
@@ -113,11 +141,70 @@
 							// draws the path with the current stroke style
 							ctx.stroke();
 					</code></pre>
+
+					<p>
+						hsla
+					</p>
+					<p><a href="https://mzl.la/2kbzOXk">https://mzl.la/2kbzOXk</a></p>
+
+					<aside class="notes">
+						<p>here we tell the canvas to use 10 pixels for line width</p>
+						<p>on line 2 we set up the stroke style.</p>
+
+						<p>The way HSLA works is that you can think of it as a colour wheel. The first parameter is the degrees with 0 being red and 180 CYAN as per this example</p>
+						<p>360 is turns red again, and 360 + 180 will be cyan again - you can just go around this circle forever.</p>
+						<p>The second parameter is the saturation, with 0 being gray, and 100 as in our case fully saturated</p>
+						<p>The third parameter is lightness, with 0 black, 100 white, and 50 normal.</p>
+						<p>The last parameter is alpha, where 0 is completely see-through, and 1 is full opacity</p>
+
+						<p>from line 3 onwards we tell the canvas that we're interested in drawing a line (otherwise known as a path)</p>
+						<p>The path starts at x 0 y 0 then we draw a line to x 200 y 200</p>
+
+						<p>So, yes - you've noticed the API isn't very consistent - we have beginPATH and LINEto.</p>
+						<p>Which is it? Path or line? Anyway.</p>
+
+						<p>There are many free tools out there that hides the canvas API from you, for example...</p>
+
+					</aside>
+
 				</section>
-				<section data-background-iframe="doodle.html#1"></section>
 
 				<section>
-					<p>Draw another line</p>
+					<p>Draw a line</p>
+					<pre><code class="hljs javascript" data-trim data-line-numbers="">
+							ctx.lineWidth = 10;
+							ctx.strokeStyle = 'hsla(180, 100%, 50%, 1.0)';
+							ctx.beginPath();
+
+							// path starting point
+							ctx.moveTo(0, 0);
+
+							// path to here
+							ctx.lineTo(200, 200);
+
+							// draws the path with the current stroke style
+							ctx.stroke();
+					</code></pre>
+
+					<p><a href="https://threejs.org/">threejs.org</a></p>
+					<p><a href="https://d3js.org/">d3js.org</a></p>
+
+					<aside class="notes">
+						<p>three.js and D3.js</p>
+						<p>this list is not exhaustive, but these are just a couple of my favourites</p>
+						<p>where were we? oh, yes - let's draw that line</p>
+					</aside>
+
+				</section>
+				<section data-background-iframe="doodle.html#1">
+						<aside class="notes">
+							<p>here's our line, running from 0 0 in the top left to 200 200 in the bottom right</p>
+							<p>and it's coloured cyan which correspond to 180 degrees on the colour wheel</p>
+						</aside>
+				</section>
+
+				<section>
+					<p>Extend the line</p>
 					<pre><code class="hljs javascript" data-trim data-line-numbers="11,12">
 							ctx.lineWidth = 10;
 							ctx.strokeStyle = 'hsla(180, 100%, 50%, 1.0)';
@@ -137,10 +224,15 @@
 					</code></pre>
 
 					<aside class="notes">
-						we're drawing an arm with an elbow at x 200 and y 200
+						<p>Let's tag another line onto the existing line</p>
+						<p>we'll be left with an arm that has an elbow at x 200 and y 200</p>
 					</aside>
 				</section>
-				<section data-background-iframe="doodle.html#2"></section>
+				<section data-background-iframe="doodle.html#2">
+						<aside class="notes">
+							<p>a static little arm on the screen HOWEVER is quite boring. It's doing nothing, just sitting there</p>
+						</aside>
+				</section>
 
 
 				<section>
@@ -157,6 +249,20 @@
 
 							window.requestAnimationFrame(step);
 					</code></pre>
+
+					<p>
+						window.requestAnimationFrame
+					</p>
+					<p><a href="https://mzl.la/2k9NhPm">https://mzl.la/2k9NhPm</a></p>
+
+					<aside class="notes">
+						<p>with requestAnimationFrame we're asking the browser to call our callback before it repaints</p>
+						<p>(highlight STEP in code) our callback is called STEP</p>
+						<p>The browser typically repaints at 60 FPS, which is why we'll be seeing a nice smooth animation in a bit.</p>
+						<p>here you can see STEP asking the browser to recursively call STEP again, effectively creating a loop</p>
+						<p>also, on line 3, before every repaint, we're instructing the canvas to clear everything in the bounding box starting at 0 0 in the top left corner all the way to the bottom right corner</p>
+						<p>This is so that we're not drawing over things we drew in the previous frame</p>
+					</aside>
 				</section>
 				<section>
 					<p>Change a colour</p>
@@ -178,61 +284,92 @@
 							}
 					</code></pre>
 
-					<p>
-						hsla description at MDN
-					</p>
-					<p><a href="https://mzl.la/2kbzOXk">https://mzl.la/2kbzOXk</a></p>
-
 					<aside class="notes">
-						<p>The first argument to HSLA is the degrees, so our count will start at 0 which is red</p>
 
-						<p>when it loops around to 360 it turns red again, and so on</p>
+						<p>we're not quite done yet.</p>
+						<p>on line 8 we will start HSLA at 0 which is red and we'll cycle through all the colours as the count variable counts up on line 11</p>
 
-						<p>so, have a close look: red at 0 and then 360 again</p>
+						<p>as mentioned before, when count reaches 360, 720, 1080 degrees and so forth, it cycles back to red on the colour wheel.</p>
+
+						<p>so, have a close look: red at 0 and then again at 360</p>
 					</aside>
 				</section>
 				<section data-background-iframe="doodle.html#3"></section>
 
 				<section>
 					<p>Change position</p>
-					<pre><code class="hljs javascript" data-trim data-line-numbers="3,4">
+					<pre><code class="hljs javascript" data-trim data-line-numbers="3-6">
+							ctx.moveTo(0, 0);
 
-							ctx.moveTo(x - 200, y - 100);
+							// path to here
+							var yDelta = Math.sin((Math.PI / 180) * count)
+							yDelta = yDelta * 100
+							ctx.lineTo(200, 200 + yDelta);
 
-							var yCount = Math.sin((Math.PI / 180) * count)
-							ctx.lineTo(x, y + yCount * 100);
+							// path to here
+							ctx.lineTo(400, 100);
 
-							ctx.lineTo(x + 200, y);
 
 					</code></pre>
 
 					<aside class="notes">
-						<p>if we treat count as angle in degrees, then</p>
+						<p>Colour isn't the only thing we want to change - we also want the arm to move</p>
 
-						<p>Math.sin((Math.PI / 180) * count)</p>
+						<p>Just like we used the count variable to represent colour, we'll re-use it to represent the Y coordinate of our arm's elbow position</p>
 
-						<p>will give us values between -1 and 1</p>
+						<p>on line 4 the SINE of PI divided by 180 times the count will give us values between -1 and 1</p>
+
+						<p>on line 5 we multiply this tiny number by 100</p>
 
 						<p>because we won't see the animation if it only moves one pixel up or down</p>
 
-						<p>now we'll see our arm's elbow moving up and down</p>
+
 					</aside>
 				</section>
-				<section data-background-iframe="doodle.html#4"></section>
+				<section data-background-iframe="doodle.html#4">
+					<aside class="notes">
+						<p>the benefit of using SINE is that we get a nice smooth transition from up to down and up again</p>
 
-				<section>
-					<h1>The final code doodle</h1>
-					<p>add more lines</p>
-					<p>add more "elbows"</p>
+						<p>You can see the tip of the elbow slowing down before coming to a standstill and going the other way</p>
+					</aside>
 				</section>
 
-				<section data-background-iframe="doodle.html#5"></section>
+				<section>
+					<p>more lines</p>
+					<p>more "elbows"</p>
+					<p>more colours</p>
+
+					<aside class="notes">
+						<p>what happens if we add more lines, with more elbows, and cycle through more colours?</p>
+						<p>We see something a bit more interesting, of course</p>
+					</aside>
+				</section>
+
+				<!-- <section data-background-iframe="doodle.html#5"></section> -->
+				<section data-background-iframe="https://juanuys.com/funwithcode/code-doodle-1/doodle/index.html">
+
+					<aside class="notes">
+						<p>Here you see the doodle which inspired this video in the first place.</p>
+						<p>there you have it. Code doodling is just something I like to do.</p>
+						<p>you know, sometimes just whipping one up for the kids</p>
+						<p>they love it and say stuff like "daddy, make it do rainbow colours, make it bounce", etc</p>
+
+						<p>I suppose it's also a great introduction to coding, what with the visual feedback</p>
+
+						<p>regardless, it feels like I'm back in the 90s and part of the demoscene again</p>
+					</aside>
+				</section>
 
 				<section>
 					<p>Find some more on the web</p>
 					<p>
 						e.g. <a href="http://codedoodl.es/">codedoodl.es</a>
 					</p>
+					<aside class="notes">
+						<p>find some more code doodles online</p>
+						<p>here's a nice collection I found: codedoodl DOT E S</p>
+						<p>I'll just load it up for you.</p>
+					</aside>
 				</section>
 
 				<section data-background-iframe="http://codedoodl.es/" data-background-interactive>
@@ -240,6 +377,15 @@
 						<h2>Iframe Backgrounds</h2>
 						<p>Since reveal.js runs on the web, you can easily embed other web content. Try interacting with the page in the background.</p>
 					</div> -->
+					<aside class="notes">
+						<p>(click on 35)</p>
+						<p>this one, number 35, uses the webgl context we talked about before</p>
+						<p>As you can see, there are a bunch of things you can do with HTML canvas</p>
+						<p>You can make it react to input and other data, and you'll only be limited by your imagination</p>
+
+						<p>thanks for joining me</p>
+						<p>I'm JUAN, this is funWithCode</p>
+					</aside>
 				</section>
 			</div>
 		</div>

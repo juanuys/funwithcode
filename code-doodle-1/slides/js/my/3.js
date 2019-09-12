@@ -6,6 +6,7 @@ function start() {
   ctx.lineWidth = 10;
   ctx.font = '48px serif';
 
+  var wait = 0;
   var count = 0;
 
   function step() {
@@ -28,7 +29,13 @@ function start() {
 
     ctx.fillText(count, x, y);
 
-    count++;
+    wait++;
+    if (wait > 60) {
+      count++;
+      if (count === 360) {
+        wait = 0;
+      }
+    }
 
     window.requestAnimationFrame(step);
   }
