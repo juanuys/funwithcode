@@ -1,22 +1,24 @@
 var THREE = require('three')
 import { OrbitControls } from './orbitcontrols';
+import BoundingBox from './src/boundingbox'
 
 var numberOfBoids = 1;
 var boids = []
-var scene, camera, renderer, frustum, controls;
+var scene, camera, renderer, frustum, controls, fishBowl, light;
 
 function init() {
   scene = new THREE.Scene();
-  // camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera = new THREE.OrthographicCamera( window.innerWidth / - 4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / - 4, 0.1, 1000 );
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+  // camera = new THREE.OrthographicCamera( window.innerWidth / - 4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / - 4, 0.1, 1000 );
+  camera.position.z = 200;
 
   // frustum stuff
   camera.updateMatrix();
   camera.updateMatrixWorld();
   frustum = new THREE.Frustum();
   var projScreenMatrix = new THREE.Matrix4();
-  projScreenMatrix.multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse );
-  frustum.setFromMatrix( new THREE.Matrix4().multiplyMatrices( camera.projectionMatrix, camera.matrixWorldInverse ) );
+  projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  frustum.setFromMatrix(new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 
   renderer = new THREE.WebGLRenderer({
     antialias: true
@@ -25,9 +27,8 @@ function init() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.appendChild(renderer.domElement);
 
-  // controls
-
-  controls = new OrbitControls( camera, renderer.domElement );
+  // CONTROLS
+  controls = new OrbitControls(camera, renderer.domElement);
   //controls.addEventListener( 'change', render ); // call this only in static scenes (i.e., if there is no animation loop)
   controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled
   controls.dampingFactor = 0.05;
@@ -36,21 +37,49 @@ function init() {
   controls.maxDistance = 500;
   controls.maxPolarAngle = Math.PI / 2;
 
-  // lights
-  var lights = [];
-  lights[0] = new THREE.PointLight(0xffffff, 1, 0);
-  lights[1] = new THREE.PointLight(0xffffff, 1, 0);
-  lights[2] = new THREE.PointLight(0xffffff, 1, 0);
+  // FLOOR
+  var material3 = new THREE.MeshStandardMaterial();
+  var geometry3 = new THREE.PlaneGeometry(10000, 10000, 100, 100);
+  var mesh3 = new THREE.Mesh(geometry3, material3);
+  mesh3.rotation.x = -90 * (Math.PI / 180);
+  mesh3.position.y = -100;
+  scene.add(mesh3);
 
-  lights[0].position.set(0, 200, 0);
-  lights[1].position.set(100, 200, 100);
-  lights[2].position.set(- 100, - 200, - 100);
+  // FISHBOWL
+  fishBowl = new BoundingBox(400, 400, 400, 0xa33aff);
+  scene.add(fishBowl.mesh)
 
-  scene.add(lights[0]);
-  scene.add(lights[1]);
-  scene.add(lights[2]);
+  // LIGHTS
 
-  camera.position.z = 200;
+  //ambient light
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+  // var lights = [];
+  // lights[0] = new THREE.PointLight(0xffffff, 1, 0);
+  // lights[1] = new THREE.PointLight(0xffffff, 1, 0);
+  // lights[2] = new THREE.PointLight(0xffffff, 1, 0);
+
+  // lights[0].position.set(0, 800, 0);
+  // lights[1].position.set(100, 200, 100);
+  // lights[2].position.set(- 100, - 200, - 100);
+
+  // scene.add(lights[0]);
+  // scene.add(lights[1]);
+  // scene.add(lights[2]);
+
+  light = new THREE.PointLight(0xffffff, 0.5, 500);
+  light.position.set(0, 100, 0);
+  scene.add(light);
+  var lightHelper = new THREE.PointLightHelper(light);
+  scene.add(lightHelper);
+
+  // var light = new THREE.SpotLight( 0xffffff, 3.0, 1000 );
+  // light.position.y = 1000 // up in the sky
+  // light.target = boundingBox.mesh;
+  // scene.add( light );
+  // var spotLightHelper = new THREE.SpotLightHelper(light);
+  // scene.add(spotLightHelper);
+
 }
 
 function initBoids() {
@@ -72,7 +101,7 @@ function initBoids() {
 
     var quaternion = new THREE.Quaternion();
 
-    quaternion.setFromAxisAngle( new THREE.Vector3( 0, 0, 1 ), randomAngle);
+    quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), randomAngle);
 
     var boid = getBoid(position, quaternion, colour);
     scene.add(boid);
@@ -82,9 +111,7 @@ function initBoids() {
 
 
 
-var opt = 1;
-
-function getBoid(position = new THREE.Vector3( 0, 0, 0 ), quaternion = null, color = 0x156289) {
+function getBoid(position = new THREE.Vector3(0, 0, 0), quaternion = null, color = 0x156289) {
   if (color === null) {
     color = 0x156289
   }
@@ -111,13 +138,20 @@ function getBoid(position = new THREE.Vector3( 0, 0, 0 ), quaternion = null, col
   return mesh
 }
 
+var delta = 0;
 function update() {
+  delta += 0.001;
+
   boids.forEach(boid => {
-    boid.translateY(0.5);
+    boid.translateY(0.05);
   })
 
   // boids[0].rotation.z += 0.01;
   // boids[0].rotation.y += 0.01;
+
+  camera.lookAt(light.position);
+  camera.position.x = Math.sin(delta) * 500;
+  camera.position.z = Math.cos(delta) * 500;
 }
 
 function render() {
