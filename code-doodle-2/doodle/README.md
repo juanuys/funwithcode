@@ -8,9 +8,19 @@ Boid model that supports geometric flight.
 
 The behaviors that lead to simulated flocking are:
 
-1. Collision Avoidance: avoid collisions with nearby flockmates
+1. Collision Avoidance: avoid collisions with nearby flockmates (and other obstacles)
 2. Velocity Matching: attempt to match velocity with nearby flockmates
 3. Flock Centering: attempt to stay close to nearby flockmates
+
+[Wikipedia](https://en.wikipedia.org/wiki/Boids) creates these definitions for the above:
+
+1. separation: steer to avoid crowding local flockmates
+2. alignment: steer towards the average heading of local flockmates
+3. cohesion: steer to move towards the average position (center of mass) of local flockmates
+
+Extra:
+4. obstacle avoidance
+5. goal seeking (e.g. "fly North for the winter" or "fly towards a food source")
 
 ## Arbitrating Independent Behaviors (p29)
 
@@ -105,6 +115,10 @@ But this report would be incomplete without a rough estimate of the actual perfo
 With a flock of 80 boids, using the naive O(N ~) algorithm (and so 6400 individual boidto-boid comparisons), on a single Lisp Machine without any special hardware accelerators, the simulation ran for about 95 seconds per frame.
 A ten-second (300 frame) motion test took about eight hours of real time to produce.
 
+## Other sources
+
+[Steering Behaviors For Autonomous Characters](http://www.red3d.com/cwr/steer/) by the same author.
+
 # Funny
 
 ## Acknowledgements (p33)
@@ -114,3 +128,14 @@ I would like to thank flocks, herds, and schools for existing; nature is the ult
 (Thanks) ...to the field of computer graphics, for giving professional
 respectability to advanced forms of play such as reported in
 this paper.
+
+# Three.js
+
+```
+Vector3 directionToSomething = something.position - my.position
+
+my.rotation = Quaternion.FromToRotation(Vector3.back, directionToSomething)
+
+// or
+my.rotation = Quaternion.LookRotation(-directionToSomething, VEctor3.up)
+```

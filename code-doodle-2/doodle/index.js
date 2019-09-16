@@ -1,10 +1,9 @@
 var THREE = require('three')
 import { OrbitControls } from './orbitcontrols';
 import BoundingBox from './src/boundingbox'
+import BoidManager from './src/boidManager';
 
-var numberOfBoids = 1;
-var boids = []
-var scene, camera, renderer, frustum, controls, fishBowl, light;
+var scene, camera, renderer, frustum, controls, fishBowl, light, lure, boidManager;
 
 function init() {
   scene = new THREE.Scene();
@@ -38,11 +37,11 @@ function init() {
   controls.maxPolarAngle = Math.PI / 2;
 
   // FLOOR
-  var material3 = new THREE.MeshStandardMaterial();
-  var geometry3 = new THREE.PlaneGeometry(10000, 10000, 100, 100);
+  var material3 = new THREE.MeshStandardMaterial({color: 0x932a99});
+  var geometry3 = new THREE.PlaneGeometry(400, 400, 100, 100);
   var mesh3 = new THREE.Mesh(geometry3, material3);
   mesh3.rotation.x = -90 * (Math.PI / 180);
-  mesh3.position.y = -100;
+  mesh3.position.y = -200;
   scene.add(mesh3);
 
   // FISHBOWL
@@ -70,8 +69,8 @@ function init() {
   light = new THREE.PointLight(0xffffff, 0.5, 500);
   light.position.set(0, 100, 0);
   scene.add(light);
-  var lightHelper = new THREE.PointLightHelper(light);
-  scene.add(lightHelper);
+  // var lightHelper = new THREE.PointLightHelper(light);
+  // scene.add(lightHelper);
 
   // var light = new THREE.SpotLight( 0xffffff, 3.0, 1000 );
   // light.position.y = 1000 // up in the sky
@@ -80,93 +79,55 @@ function init() {
   // var spotLightHelper = new THREE.SpotLightHelper(light);
   // scene.add(spotLightHelper);
 
-}
+  // TARGET
 
-function initBoids() {
-  for (let i = 0; i < numberOfBoids; i++) {
-    var randomX = Math.random() * 250 - 125
-    var randomY = Math.random() * 250 - 125
-    var randomAngle = Math.random() * (Math.PI * 2 /* full rotation */)
-    var colour = null // will use default color in getBoid
+  lure = new THREE.PointLight(0xffffff, 3, 500);
+  lure.position.set(0, 50, 0);
+  scene.add(lure);
+  var lightHelper = new THREE.PointLightHelper(lure);
+  scene.add(lightHelper);
 
-    // reference boid
-    if (i === 0) {
-      randomX = 0
-      randomY = 0
-      randomAngle = 0
-      colour = 0xe56289
-    }
-
-    var position = new THREE.Vector3(randomX, randomY, 0)
-
-    var quaternion = new THREE.Quaternion();
-
-    quaternion.setFromAxisAngle(new THREE.Vector3(0, 0, 1), randomAngle);
-
-    var boid = getBoid(position, quaternion, colour);
-    scene.add(boid);
-    boids.push(boid)
-  }
-}
-
-
-
-function getBoid(position = new THREE.Vector3(0, 0, 0), quaternion = null, color = 0x156289) {
-  if (color === null) {
-    color = 0x156289
-  }
-  var mesh
-
-  var geometry = new THREE.ConeGeometry(5, 10, 8)
-
-  // basic
-  // var material = new THREE.MeshBasicMaterial( {color: 0x3592b9} );
-  // mesh = new THREE.Mesh( geometry, material );
-
-  // wireframe
-  mesh = new THREE.Group();
-  var lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
-  var meshMaterial = new THREE.MeshPhongMaterial({ color, emissive: 0x072534, side: THREE.DoubleSide, flatShading: true });
-  mesh.add(new THREE.LineSegments(new THREE.WireframeGeometry(geometry), lineMaterial));
-  mesh.add(new THREE.Mesh(geometry, meshMaterial));
-
-  mesh.position.copy(position)
-  if (quaternion) {
-    mesh.quaternion.copy(quaternion)
-  }
-
-  return mesh
-}
-
-var delta = 0;
-function update() {
-  delta += 0.001;
-
-  boids.forEach(boid => {
-    boid.translateY(0.05);
+  // BOIDS
+  boidManager = new BoidManager(1, [], lure)
+  boidManager.boids.forEach(boid => {
+    scene.add(boid.mesh)
   })
+}
 
-  // boids[0].rotation.z += 0.01;
-  // boids[0].rotation.y += 0.01;
+
+
+var counter = 0;
+function update(delta) {
+  counter += 0.001;
+
+  boidManager.update(delta)
 
   camera.lookAt(light.position);
-  camera.position.x = Math.sin(delta) * 500;
-  camera.position.z = Math.cos(delta) * 500;
+  camera.position.x = Math.sin(counter) * 500;
+  camera.position.z = Math.cos(counter) * 500;
+
+  lure.position.x = Math.sin(counter * 5) * 400;
+  lure.position.y = Math.cos(counter * 10) * 400;
+  lure.position.z = Math.cos(counter * 15) * 400;
 }
 
-function render() {
-  update()
+var oldDelta = 0
+function render(newDelta) {
+  var delta = (newDelta - oldDelta) / 1000
+  oldDelta = newDelta
+
+  update(delta)
 
   renderer.render(scene, camera);
 }
 
-var animate = function () {
+var animate = function (delta = 0) {
   requestAnimationFrame(animate);
 
   // only required if controls.enableDamping = true, or if controls.autoRotate = true
   controls.update();
 
-  render()
+  render(delta)
 };
 
 
@@ -182,5 +143,5 @@ window.addEventListener('resize', function () {
 
 
 init()
-initBoids()
+
 animate();
