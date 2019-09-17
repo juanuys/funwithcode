@@ -33,7 +33,7 @@ function init() {
   controls.dampingFactor = 0.05;
   controls.screenSpacePanning = false;
   controls.minDistance = 100;
-  controls.maxDistance = 500;
+  controls.maxDistance = 1000;
   controls.maxPolarAngle = Math.PI / 2;
 
   // FLOOR
@@ -88,7 +88,7 @@ function init() {
   scene.add(lightHelper);
 
   // BOIDS
-  boidManager = new BoidManager(20, [], lure)
+  boidManager = new BoidManager(20, [fishBowl], lure)
   boidManager.boids.forEach(boid => {
     scene.add(boid.mesh)
   })

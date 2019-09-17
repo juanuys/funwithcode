@@ -74,7 +74,7 @@ export default class Boid {
       // pos.sub(this.mesh.position);
       // var accelerationTowardsTarget = this.steerTowards(pos).multiplyScalar(maxForceSeek);
 
-      var accelerationTowardsTarget = this.seek(this.target.position)
+      var accelerationTowardsTarget = this.seek(delta, this.target.position)
 
       // "flee" would use sub
       this.acceleration.add(accelerationTowardsTarget)
@@ -86,18 +86,18 @@ export default class Boid {
     }
 
     // steering behaviour: separation
-    this.acceleration.add(this.separation(neighbours, obstacles))
+    this.acceleration.add(this.separation(delta, neighbours, obstacles))
 
     // steering behaviour: alignment
-    this.acceleration.add(this.alignment(neighbours))
+    this.acceleration.add(this.alignment(delta, neighbours))
 
     // steering behaviour: cohesion
-    this.acceleration.add(this.cohesion(neighbours))
+    this.acceleration.add(this.cohesion(delta, neighbours))
 
-    this.applyAcceleration()
+    this.applyAcceleration(delta)
   }
 
-  applyAcceleration() {
+  applyAcceleration(delta) {
     this.acceleration.clampLength(0, maxSteerForce);
     this.velocity.add(this.acceleration);
     this.acceleration.set(0, 0, 0); // reset
@@ -109,10 +109,11 @@ export default class Boid {
     this.mesh.lookAt(this.velocity)
   }
 
-  seek (target) {
+  seek (delta, target) {
     var steerVector = target.clone().sub(this.mesh.position);
     steerVector.normalize().setLength(maxSpeed).sub(this.velocity);
     steerVector.clampLength(0, maxForceSeek);
+    steerVector.multiplyScalar(delta)
     return steerVector
   }
 
@@ -128,7 +129,7 @@ export default class Boid {
    * The vector "steerVector" is then later added to the current position to move the boid away from
    * obstacles near it.
    */
-  separation(neighbours, obstacles, range = 30) {
+  separation(delta, neighbours, obstacles, range = 30) {
 
     const steerVector = new THREE.Vector3();
 
@@ -155,6 +156,7 @@ export default class Boid {
     }
     // steerVector.normalize();
 
+    steerVector.multiplyScalar(delta)
     return steerVector;
   }
 
@@ -163,7 +165,7 @@ export default class Boid {
    *
    * @param {*} neighbours
    */
-  alignment(neighbours, range = 30) {
+  alignment(delta, neighbours, range = 30) {
     const steerVector = new THREE.Vector3();
     const averageDirection = new THREE.Vector3();
 
@@ -187,6 +189,8 @@ export default class Boid {
       var myDirection = this.velocity.clone().normalize()
 			steerVector.subVectors(averageDirection, myDirection);
     }
+
+    steerVector.multiplyScalar(delta)
     return steerVector;
   }
 
@@ -195,7 +199,7 @@ export default class Boid {
    *
    * @param {*} neighbours
    */
-  cohesion(neighbours, range = 30) {
+  cohesion(delta, neighbours, range = 30) {
     var steerVector
     const centreOfMass = new THREE.Vector3();
 
@@ -217,11 +221,13 @@ export default class Boid {
       centreOfMass.divideScalar(neighboursInRangeCount);
 
       // "seek" the centre of mass
-      steerVector = this.seek(centreOfMass)
+      steerVector = this.seek(delta, centreOfMass)
       steerVector.normalize()
     } else {
       steerVector = new THREE.Vector3()
     }
+
+    steerVector.multiplyScalar(delta)
     return steerVector;
   }
 }
