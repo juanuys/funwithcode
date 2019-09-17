@@ -1,10 +1,12 @@
+import { throws } from 'assert';
+
 var THREE = require('three')
 
 var minSpeed = 2
 var maxSpeed = 5
-var maxSteerForce = 3
+var maxSteerForce = 1
 
-var maxForceSeek = 0.05
+var maxForceSeek = 1
 var maxForceSeparation = 10
 
 const clamp = function(it, min, max) {
@@ -12,7 +14,7 @@ const clamp = function(it, min, max) {
 };
 
 export default class Boid {
-  constructor(target, position, quaternion, colour) {
+  constructor(target, position, quaternion, colour, followTarget = false) {
     this.mesh = this.getBoid(position, quaternion, colour)
     this.target = target
 
@@ -25,6 +27,9 @@ export default class Boid {
     this.velocity = this.mesh.up.multiplyScalar(startSpeed);
 
     this.forward = new THREE.Vector3( 0, 0, 1 )
+
+    // if a boid is the leader, it will follow the target (and set the course, so to speak)
+    this.followTarget = followTarget;
   }
 
   getBoid(position = new THREE.Vector3(0, 0, 0), quaternion = null, color = 0x156289) {
@@ -59,11 +64,11 @@ export default class Boid {
    * - alignment: steer towards the average heading of local flockmates
    * - cohesion: steer to move towards the average position (center of mass) of local flockmates
    */
-  update(delta, obstacles) {
+  update(delta, neighbours, obstacles) {
 
 
     // fly towards the target
-    if (this.target) {
+    if (this.target && this.followTarget) {
 
       // var pos = this.target.position.clone()
       // pos.sub(this.mesh.position);
@@ -81,10 +86,13 @@ export default class Boid {
     }
 
     // steering behaviour: separation
-    this.acceleration.add(this.separate(obstacles))
+    this.acceleration.add(this.separation(neighbours, obstacles))
 
     // steering behaviour: alignment
-    this.acceleration.add(this.align(obstacles))
+    this.acceleration.add(this.alignment(neighbours))
+
+    // steering behaviour: cohesion
+    this.acceleration.add(this.cohesion(neighbours))
 
     this.applyAcceleration()
   }
@@ -116,17 +124,19 @@ export default class Boid {
    *
    * Simply look at each obstacle, and if it's within a defined small distance (say 100 units),
    * then move it as far away again as it already is. This is done by subtracting from a vector
-   * "steerVector" (initialised to zero) the displacement of each obstacle which is near by.
-   * The vector "steerVector" is then added to the current position to move the boid away from
+   * "steerVector" (initialised to zero) the displacement of each obstacle which is nearby.
+   * The vector "steerVector" is then later added to the current position to move the boid away from
    * obstacles near it.
    */
-  separate(obstacles, range = 30) {
+  separation(neighbours, obstacles, range = 30) {
 
     const steerVector = new THREE.Vector3();
 
     var neighbourInRangeCount = 0
 
-    obstacles.forEach((obstacle) => {
+
+
+    neighbours.concat(obstacles).forEach((obstacle) => {
 
       // skip same object
       if (obstacle.mesh.id === this.mesh.id) return;
@@ -139,11 +149,11 @@ export default class Boid {
 
     })
 
-    if (neighbourInRangeCount != 0) {
+    if (neighbourInRangeCount > 0) {
       steerVector.divideScalar(neighbourInRangeCount)
-      steerVector.negate();
+      steerVector.negate()
     }
-    steerVector.normalize();
+    // steerVector.normalize();
 
     return steerVector;
   }
@@ -153,7 +163,7 @@ export default class Boid {
    *
    * @param {*} neighbours
    */
-  align(neighbours, range = 30) {
+  alignment(neighbours, range = 30) {
     const steerVector = new THREE.Vector3();
     const averageDirection = new THREE.Vector3();
 
@@ -176,6 +186,41 @@ export default class Boid {
 			averageDirection.divideScalar(neighboursInRangeCount);
       var myDirection = this.velocity.clone().normalize()
 			steerVector.subVectors(averageDirection, myDirection);
+    }
+    return steerVector;
+  }
+
+  /**
+   * Produces a steering force that moves a boid toward the center of mass of its neighbours.
+   *
+   * @param {*} neighbours
+   */
+  cohesion(neighbours, range = 30) {
+    var steerVector
+    const centreOfMass = new THREE.Vector3();
+
+    var neighboursInRangeCount = 0;
+
+    neighbours.forEach(neighbour => {
+
+      // skip same object
+      if (neighbour.mesh.id === this.mesh.id) return;
+
+      const distance = neighbour.mesh.position.distanceTo(this.mesh.position)
+      if (distance <= range) {
+        neighboursInRangeCount++
+        centreOfMass.add(neighbour.mesh.position)
+      }
+    })
+
+    if (neighboursInRangeCount > 0) {
+      centreOfMass.divideScalar(neighboursInRangeCount);
+
+      // "seek" the centre of mass
+      steerVector = this.seek(centreOfMass)
+      steerVector.normalize()
+    } else {
+      steerVector = new THREE.Vector3()
     }
     return steerVector;
   }
