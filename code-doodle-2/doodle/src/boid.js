@@ -15,6 +15,11 @@ export default class Boid {
     this.mesh = this.getBoid(position, quaternion, colour)
     this.target = target
 
+    // re-usable acceleration vector
+    this.acceleration = new THREE.Vector3();
+
+    // velocity is speed in a given direction, and in the update method we'll
+    // compute an acceleration that will change the velocity
     var startSpeed = (minSpeed + maxSpeed) / 2;
     this.velocity = this.mesh.up.multiplyScalar(startSpeed);
   }
@@ -73,38 +78,44 @@ export default class Boid {
    * - cohesion: steer to move towards the average position (center of mass) of local flockmates
    */
   update(delta, obstacles) {
-    var acceleration = THREE.Vector3();
+
 
     // fly towards the target
     if (this.target) {
-      var offsetToTarget = this.target.position.sub(this.mesh.position);
-      acceleration = this.steerTowards(offsetToTarget).multiplyScalar(targetWeight);
+
+      // var pos = this.target.position.clone()
+      // pos.sub(this.mesh.position);
+      // var accelerationTowardsTarget = this.steerTowards(pos).multiplyScalar(targetWeight);
+
+      var accelerationTowardsTarget = this.seek(this.target.position)
+
+      // "flee" would use sub
+      this.acceleration.add(accelerationTowardsTarget)
     } else {
       // just fly forward for now
       this.mesh.translateY(minSpeed);
+
+      // TODO "wander" behaviour?
     }
 
-    // apply new acceleration
-    acceleration.multiplyScalar(delta)
-    this.velocity.add(acceleration)
-    var speed = this.velocity.length();
-    var newVelocity = this.velocity.clone()
-    newVelocity.divideScalar(speed);
-    speed = clamp(speed, minSpeed, maxSpeed);
-    newVelocity.multiplyScalar(speed)
-    this.velocity.copy(newVelocity);
-
-
-    // this.mesh.position += this.velocity * delta
-    // this.velocity.multiplyScalar(delta * 20)
-    this.mesh.position.add(this.velocity)
-
-    // set boid's "forward" to the new direction
-    this.mesh.quaternion.setFromUnitVectors(this.mesh.up, this.velocity.clone().normalize());
+    this.applyAcceleration()
   }
 
-  steerTowards(vector) {
-    var vec = vector.normalize().multiplyScalar(maxSpeed).sub(this.velocity);
-    return vec.clampLength(0, maxSteerForce);
+  applyAcceleration() {
+    this.acceleration.clampLength(0, maxSteerForce);
+    this.velocity.add(this.acceleration);
+    this.acceleration.set(0, 0, 0); // reset
+
+    this.velocity.clampLength(0, maxSpeed)
+    this.mesh.position.add(this.velocity)
+
+    // change heading
+    this.mesh.lookAt(this.velocity)
+  }
+
+  seek (target) {
+    var steerVector = target.clone().sub(this.mesh.position);
+    steerVector.normalize().setLength(maxSpeed).sub(this.velocity);
+    return steerVector
   }
 }
