@@ -4,7 +4,7 @@ var minSpeed = 2
 var maxSpeed = 5
 var maxSteerForce = 3
 
-var maxForceSeek = 0.1
+var maxForceSeek = 0.05
 var maxForceSeparation = 10
 
 const clamp = function(it, min, max) {
@@ -23,6 +23,8 @@ export default class Boid {
     // compute an acceleration that will change the velocity
     var startSpeed = (minSpeed + maxSpeed) / 2;
     this.velocity = this.mesh.up.multiplyScalar(startSpeed);
+
+    this.forward = new THREE.Vector3( 0, 0, 1 )
   }
 
   getBoid(position = new THREE.Vector3(0, 0, 0), quaternion = null, color = 0x156289) {
@@ -44,6 +46,14 @@ export default class Boid {
     }
 
     return mesh
+  }
+
+  /**
+   * Get this boid's direction.
+   * @param {*} result
+   */
+  getDirection(result) {
+    return result.copy(this.forward).applyEuler(this.mesh.rotation).normalize();
   }
 
   /**
@@ -79,8 +89,10 @@ export default class Boid {
     }
 
     // steering behaviour: separation
-    var accelerationAwayFromTarget = this.separate(obstacles)
-    this.acceleration.add(accelerationAwayFromTarget)
+    this.acceleration.add(this.separate(obstacles))
+
+    // steering behaviour: alignment
+    this.acceleration.add(this.align(obstacles))
 
     this.applyAcceleration()
   }
@@ -116,7 +128,6 @@ export default class Boid {
    * The vector "steerVector" is then added to the current position to move the boid away from
    * obstacles near it.
    */
-
   separate(obstacles, range = 30) {
 
     const steerVector = new THREE.Vector3();
@@ -145,29 +156,35 @@ export default class Boid {
     return steerVector;
   }
 
-  separate2(obstacles, range = 150) {
-
+  /**
+   * Produces a steering force that keeps a boid's heading aligned with its neighbours.
+   *
+   * @param {*} neighbours
+   */
+  align(neighbours, range = 30) {
     const steerVector = new THREE.Vector3();
+    const averageDirection = new THREE.Vector3();
 
-    obstacles.forEach((obstacle) => {
+    var neighboursInRangeCount = 0;
+
+    neighbours.forEach(neighbour => {
 
       // skip same object
-      if (obstacle.mesh.id === this.mesh.id) return;
+      if (neighbour.mesh.id === this.mesh.id) return;
 
-      const dist = this.mesh.position.distanceTo(obstacle.mesh.position);
-      // console.log("dist", dist)
-      if (dist > 0 && dist <= range) {
-        steerVector.subVectors(this.mesh.position, obstacle.mesh.position);
-        let length = steerVector.length()
-        if ( length === 0 ) length = 0.0001;
-        // scale the force inversely proportional to the boid's distance from the obstacle
-        steerVector.normalize().divideScalar(length);
-        console.log(steerVector, length)
+      const distance = neighbour.mesh.position.distanceTo(this.mesh.position)
+      if (distance <= range) {
+        neighboursInRangeCount++
+        var neighbourDirection = neighbour.velocity.clone().normalize()
+        averageDirection.add(neighbourDirection);
       }
-    });
+    })
 
-    steerVector.clampLength(0, maxForceSeparation);
-
+		if (neighboursInRangeCount > 0) {
+			averageDirection.divideScalar(neighboursInRangeCount);
+      var myDirection = this.velocity.clone().normalize()
+			steerVector.subVectors(averageDirection, myDirection);
+    }
     return steerVector;
   }
 }
