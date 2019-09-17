@@ -49,14 +49,6 @@ export default class Boid {
   }
 
   /**
-   * Get this boid's direction.
-   * @param {*} result
-   */
-  getDirection(result) {
-    return result.copy(this.forward).applyEuler(this.mesh.rotation).normalize();
-  }
-
-  /**
    * The boid will update its "steer vector" based on:
    * - Collision Avoidance: avoid collisions with nearby flockmates (and other obstacles)
    * - Velocity Matching: attempt to match velocity with nearby flockmates
