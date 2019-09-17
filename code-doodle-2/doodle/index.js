@@ -88,35 +88,41 @@ function init() {
   scene.add(lightHelper);
 
   // BOIDS
-  boidManager = new BoidManager(1, [], lure)
+  boidManager = new BoidManager(20, [], lure)
   boidManager.boids.forEach(boid => {
     scene.add(boid.mesh)
   })
 }
 
-
-
+// loop vars
+var oldDelta = 0
 var counter = 0;
+var paused = false
+var slowPanEnabled = true
+
 function update(delta) {
   counter += 0.001;
 
   boidManager.update(delta)
 
-  camera.lookAt(light.position);
-  camera.position.x = Math.sin(counter) * 500;
-  camera.position.z = Math.cos(counter) * 500;
+  if (slowPanEnabled) {
+    camera.lookAt(light.position);
+    camera.position.x = Math.sin(counter) * 500;
+    camera.position.z = Math.cos(counter) * 500;
+  }
 
   lure.position.x = Math.sin(counter * 5) * 400;
   lure.position.y = Math.cos(counter * 10) * 400;
   lure.position.z = Math.cos(counter * 15) * 400;
 }
 
-var oldDelta = 0
 function render(newDelta) {
   var delta = (newDelta - oldDelta) / 1000
   oldDelta = newDelta
 
-  update(delta)
+  if (!paused) {
+    update(delta)
+  }
 
   renderer.render(scene, camera);
 }
@@ -140,6 +146,19 @@ window.addEventListener('resize', function () {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
 });
+
+document.addEventListener("keydown", onDocumentKeyDown, false);
+function onDocumentKeyDown(event) {
+    var keyCode = event.which;
+    if (keyCode == 32) {
+        paused = !paused;
+
+        // disable slow-pan so when animation is resumed, the viewer has the controls.
+        if (slowPanEnabled) {
+          slowPanEnabled = false
+        }
+    }
+};
 
 
 init()

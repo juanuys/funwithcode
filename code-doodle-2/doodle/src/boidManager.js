@@ -49,7 +49,7 @@ export default class BoidManager {
 
   update(delta) {
     this.boids.forEach(boid => {
-      boid.update(delta)
+      boid.update(delta, this.boids)
     })
   }
 }
