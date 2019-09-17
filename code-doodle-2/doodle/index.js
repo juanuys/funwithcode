@@ -3,7 +3,7 @@ import { OrbitControls } from './orbitcontrols';
 import BoundingBox from './src/boundingbox'
 import BoidManager from './src/boidManager';
 
-var scene, camera, renderer, frustum, controls, fishBowl, light, lure, boidManager;
+var scene, camera, renderer, frustum, controls, fishBowl, light, lure, boidManager, clock;
 
 function init() {
   scene = new THREE.Scene();
@@ -92,10 +92,12 @@ function init() {
   boidManager.boids.forEach(boid => {
     scene.add(boid.mesh)
   })
+
+  // CLOCK
+  clock = new THREE.Clock();
 }
 
 // loop vars
-var oldDelta = 0
 var counter = 0;
 var paused = false
 var slowPanEnabled = true
@@ -116,10 +118,8 @@ function update(delta) {
   lure.position.z = Math.cos(counter * 15) * 400;
 }
 
-function render(newDelta) {
-  var delta = (newDelta - oldDelta) / 1000
-  oldDelta = newDelta
-
+function render() {
+  var delta = clock.getDelta();
   if (!paused) {
     update(delta)
   }
@@ -127,13 +127,13 @@ function render(newDelta) {
   renderer.render(scene, camera);
 }
 
-var animate = function (delta = 0) {
+var animate = function () {
   requestAnimationFrame(animate);
 
   // only required if controls.enableDamping = true, or if controls.autoRotate = true
   controls.update();
 
-  render(delta)
+  render()
 };
 
 
