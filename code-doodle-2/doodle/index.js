@@ -1,3 +1,7 @@
+/**
+ * 1 unit = 1 cm
+ */
+
 var THREE = require('three')
 import { OrbitControls } from './orbitcontrols';
 import BoundingBox from './src/boundingbox'
@@ -5,11 +9,13 @@ import BoidManager from './src/boidManager';
 
 var scene, camera, renderer, frustum, controls, fishBowl, light, lure, boidManager, clock;
 
+var staticCone
+
 function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
   // camera = new THREE.OrthographicCamera( window.innerWidth / - 4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / - 4, 0.1, 1000 );
-  camera.position.z = 200;
+  camera.position.z  = 500;
 
   // frustum stuff
   camera.updateMatrix();
@@ -37,16 +43,16 @@ function init() {
   controls.maxPolarAngle = Math.PI / 2;
 
   // FLOOR
-  var material3 = new THREE.MeshStandardMaterial({color: 0x932a99});
-  var geometry3 = new THREE.PlaneGeometry(400, 400, 100, 100);
-  var mesh3 = new THREE.Mesh(geometry3, material3);
-  mesh3.rotation.x = -90 * (Math.PI / 180);
-  mesh3.position.y = -200;
-  scene.add(mesh3);
+  // var material3 = new THREE.MeshStandardMaterial({color: 0x932a99});
+  // var geometry3 = new THREE.PlaneGeometry(400, 400, 100, 100);
+  // var mesh3 = new THREE.Mesh(geometry3, material3);
+  // mesh3.rotation.x = -90 * (Math.PI / 180);
+  // mesh3.position.y = -200;
+  // scene.add(mesh3);
 
   // FISHBOWL
-  fishBowl = new BoundingBox(400, 400, 400, 0xa33aff);
-  scene.add(fishBowl.mesh)
+  // fishBowl = new BoundingBox(400, 400, 400, 0xa33aff);
+  // scene.add(fishBowl.mesh)
 
   // LIGHTS
 
@@ -81,26 +87,49 @@ function init() {
 
   // TARGET
 
-  lure = new THREE.PointLight(0xffffff, 3, 500);
-  lure.position.set(0, 50, 0);
-  scene.add(lure);
-  var lightHelper = new THREE.PointLightHelper(lure);
-  scene.add(lightHelper);
+  lure = null
+  // lure = new THREE.PointLight(0xffffff, 3, 500);
+  // lure.position.set(0, 50, 0);
+  // scene.add(lure);
+  // var lightHelper = new THREE.PointLightHelper(lure);
+  // scene.add(lightHelper);
 
   // BOIDS
-  boidManager = new BoidManager(20, [fishBowl], lure)
+  boidManager = new BoidManager(200, [fishBowl], lure)
   boidManager.boids.forEach(boid => {
     scene.add(boid.mesh)
   })
 
   // CLOCK
   clock = new THREE.Clock();
+
+  var axesHelper = new THREE.AxesHelper(50);
+  scene.add(axesHelper);
+
+
+  // TMP (experimentation)
+
+  // var geometry = new THREE.ConeGeometry( 5, 10, 8 );
+  // geometry.rotateX(THREE.Math.degToRad(90));
+  // var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+  // staticCone = new THREE.Mesh( geometry, material );
+  // staticCone.position.copy(new THREE.Vector3(100, 100, 100))
+  // scene.add(staticCone);
+  // staticCone.lookAt(new THREE.Vector3(0,0,0))
+
+  // var geometry = new THREE.CylinderGeometry( 1, 5, 10, 8 );
+  // geometry.rotateX(THREE.Math.degToRad(90));
+  // var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+  // staticCone = new THREE.Mesh( geometry, material );
+  // staticCone.position.copy(new THREE.Vector3(100, 100, 100))
+  // scene.add( staticCone );
+  // staticCone.lookAt(new THREE.Vector3(0,0,0))
 }
 
 // loop vars
 var counter = 0;
 var paused = false
-var slowPanEnabled = true
+var slowPanEnabled = false
 
 function update(delta) {
   counter += 0.001;
@@ -113,9 +142,11 @@ function update(delta) {
     camera.position.z = Math.cos(counter) * 500;
   }
 
-  lure.position.x = Math.sin(counter * 5) * 400;
-  lure.position.y = Math.cos(counter * 10) * 400;
-  lure.position.z = Math.cos(counter * 15) * 400;
+  if (lure) {
+    lure.position.x = Math.sin(counter * 5) * 400;
+    lure.position.y = Math.cos(counter * 10) * 400;
+    lure.position.z = Math.cos(counter * 15) * 400;
+  }
 }
 
 function render() {

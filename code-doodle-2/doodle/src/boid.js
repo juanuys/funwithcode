@@ -2,12 +2,27 @@ import { throws } from 'assert';
 
 var THREE = require('three')
 
-var minSpeed = 2
-var maxSpeed = 5
-var maxSteerForce = 1
+const minSpeed = 1
+const maxSpeed = 3
+const maxSteerForce = 5
 
-var maxForceSeek = 1
-var maxForceSeparation = 10
+const maxForceSeek = 1
+const maxForceSeparation = 10
+
+const wanderDistance = 10;
+const wanderRadius = 5;
+const wanderRange = 1;
+
+const numSamplesForSmoothing = 20
+
+const wanderWeight = 0.25
+const cohesionWeight = 1.2
+const separationWeight = 0.1
+const alignmentWeight = 1
+
+var counter = 0
+
+const nullSteerVector = new THREE.Vector3()
 
 const clamp = function(it, min, max) {
   return Math.min(Math.max(it, min), max);
@@ -24,12 +39,20 @@ export default class Boid {
     // velocity is speed in a given direction, and in the update method we'll
     // compute an acceleration that will change the velocity
     var startSpeed = (minSpeed + maxSpeed) / 2;
-    this.velocity = this.mesh.up.multiplyScalar(startSpeed);
+    // this.velocity = this.mesh.up.multiplyScalar(startSpeed);
+    this.velocity = new THREE.Vector3(0, 0, 0);
 
-    this.forward = new THREE.Vector3( 0, 0, 1 )
+    // this.forward = new THREE.Vector3( 0, 0, 1 )
 
     // if a boid is the leader, it will follow the target (and set the course, so to speak)
     this.followTarget = followTarget;
+
+    this.wanderAngle = 0
+
+    // remember the last however many velocities so we can smooth the heading of the boid
+    this.velocitySamples = []
+
+    this.wanderTarget = nullSteerVector
   }
 
   getBoid(position = new THREE.Vector3(0, 0, 0), quaternion = null, color = 0x156289) {
@@ -38,6 +61,8 @@ export default class Boid {
     }
 
     var geometry = new THREE.ConeGeometry(5, 10, 8)
+    // rotate the geometry, because the face used by lookAt is not the cone's "tip"
+    geometry.rotateX(THREE.Math.degToRad(90));
 
     var mesh = new THREE.Group();
     var lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 });
@@ -66,6 +91,40 @@ export default class Boid {
    */
   update(delta, neighbours, obstacles) {
 
+    counter++
+
+    // if (counter < 250) {
+    //   this.acceleration.add(this.seek(delta, new THREE.Vector3(0, 100, 200)))
+    // } else {
+    //   this.acceleration.add(this.seek(delta, new THREE.Vector3(-100, 0, 100)))
+    // }
+
+    // var target = new THREE.Vector3(0, 100, 200)
+    // var distance = this.mesh.position.distanceTo(target)
+    // if (distance > 5) {
+    //   this.acceleration.add(this.seek(delta, target))
+    // } else {
+    //   console.log(this.velocity, this.velocity.length())
+    // }
+
+
+    // this.acceleration.add(this.seek(delta, target))
+    // this.acceleration.add(nullSteerVector)
+    // console.log(this.mesh.position)
+
+
+
+    // this.applyAcceleration(delta)
+    // this.lookWhereGoing()
+
+
+    // this.mesh.lookAt(this.velocity)
+
+
+    // const head = this.velocity.clone();
+    // head.add(this.mesh.position);
+    // this.mesh.lookAt(head);
+
 
     // fly towards the target
     if (this.target && this.followTarget) {
@@ -80,40 +139,70 @@ export default class Boid {
       this.acceleration.add(accelerationTowardsTarget)
     } else {
       // just fly forward for now
-      this.mesh.translateY(minSpeed);
+      // this.mesh.translateY(minSpeed);
 
-      // TODO "wander" behaviour?
+      this.acceleration.add(this.wander(delta).multiplyScalar(wanderWeight))
     }
 
-    // steering behaviour: separation
-    this.acceleration.add(this.separation(delta, neighbours, obstacles))
-
     // steering behaviour: alignment
-    this.acceleration.add(this.alignment(delta, neighbours))
+    this.acceleration.add(this.alignment(delta, neighbours).multiplyScalar(alignmentWeight))
 
     // steering behaviour: cohesion
-    this.acceleration.add(this.cohesion(delta, neighbours))
+    this.acceleration.add(this.cohesion(delta, neighbours).multiplyScalar(cohesionWeight))
+
+    // steering behaviour: separation
+    this.acceleration.add(this.separation(delta, neighbours, obstacles).multiplyScalar(separationWeight))
 
     this.applyAcceleration(delta)
+
+    this.lookWhereGoing()
   }
 
   applyAcceleration(delta) {
+    // if (this.velocity.length() < 1) {
+    //   this.velocity = new THREE.Vector3()
+    // }
+    // console.log(this.acceleration)
+    // console.log("this.acceleration.length() >", this.acceleration.length())
     this.acceleration.clampLength(0, maxSteerForce);
+    // console.log("this.acceleration.length() <", this.acceleration.length())
+    // this.velocity.add(this.acceleration.multiplyScalar(delta));
     this.velocity.add(this.acceleration);
     this.acceleration.set(0, 0, 0); // reset
 
-    this.velocity.clampLength(0, maxSpeed)
-    this.mesh.position.add(this.velocity)
+    // console.log("this.velocity.length() >", this.velocity.length())
 
-    // change heading
-    this.mesh.lookAt(this.velocity)
+    // console.log(this.velocity.length())
+    this.velocity.clampLength(minSpeed, maxSpeed)
+
+    // console.log("this.velocity.length() <", this.velocity.length())
+    this.mesh.position.add(this.velocity)
+    // console.log(this.velocity)
   }
 
+  /**
+   * Once the boid reaches a stationary target, and the target doesn't change, it will flip/flop on the spot.
+   * That's because the old velocity is retained.
+   * @param {*} delta
+   * @param {*} target
+   */
   seek (delta, target) {
-    var steerVector = target.clone().sub(this.mesh.position);
-    steerVector.normalize().setLength(maxSpeed).sub(this.velocity);
-    steerVector.clampLength(0, maxForceSeek);
+    var steerVector = nullSteerVector
+    // // if distance between boid and target is small, do nothing
+    // var distance = this.mesh.position.distanceTo(target)
+    // if (distance < 5) {
+    //   // do nothing, but remember that the old velocity is maintained.
+    // } else {
+    //   // console.log(distance)
+    //   steerVector = target.clone().sub(this.mesh.position);
+    //   steerVector.normalize().sub(this.velocity);
+    //   steerVector.multiplyScalar(delta)
+    // }
+
+    steerVector = target.clone().sub(this.mesh.position);
+    steerVector.normalize().sub(this.velocity);
     steerVector.multiplyScalar(delta)
+
     return steerVector
   }
 
@@ -135,9 +224,9 @@ export default class Boid {
 
     var neighbourInRangeCount = 0
 
+    neighbours.concat(obstacles).forEach(obstacle => {
 
-
-    neighbours.concat(obstacles).forEach((obstacle) => {
+      if (obstacle === null || typeof obstacle === 'undefined') return
 
       // skip same object
       if (obstacle.mesh.id === this.mesh.id) return;
@@ -147,15 +236,18 @@ export default class Boid {
         steerVector.add(obstacle.mesh.position.clone().sub(this.mesh.position));
           neighbourInRangeCount++;
       }
-
     })
 
     if (neighbourInRangeCount > 0) {
       steerVector.divideScalar(neighbourInRangeCount)
       steerVector.negate()
     }
+
+    // don't normalise, as the boid really doesn't want to crash into a neighbour,
+    // so a larger magnitude must have an effect
     // steerVector.normalize();
 
+    // can't find a nice way to integrate delta
     steerVector.multiplyScalar(delta)
     return steerVector;
   }
@@ -165,7 +257,7 @@ export default class Boid {
    *
    * @param {*} neighbours
    */
-  alignment(delta, neighbours, range = 30) {
+  alignment(delta, neighbours, range = 50) {
     const steerVector = new THREE.Vector3();
     const averageDirection = new THREE.Vector3();
 
@@ -229,5 +321,56 @@ export default class Boid {
 
     steerVector.multiplyScalar(delta)
     return steerVector;
+  }
+
+  rndCoord(range = 195) {
+    return (Math.random() - 0.5) * range * 2
+  }
+  wander(delta) {
+
+    var distance = this.mesh.position.distanceTo(this.wanderTarget)
+    if (distance < 5) {
+      // when we reach the target, set a new random target
+      this.wanderTarget = new THREE.Vector3(this.rndCoord(), this.rndCoord(), this.rndCoord())
+    } else if (counter > 500) {
+      this.wanderTarget = new THREE.Vector3(this.rndCoord(), this.rndCoord(), this.rndCoord())
+      counter = 0
+    }
+
+    return this.seek(delta, this.wanderTarget)
+  }
+
+  wander2(delta) {
+    var steerVector = this.velocity.clone().normalize().setLength(wanderDistance);
+    var offset = new THREE.Vector3(1, 1, 1);
+    offset.setLength(wanderRadius);
+    offset.x = Math.sin(this.wanderAngle) * offset.length()
+    offset.z = Math.cos(this.wanderAngle) * offset.length()
+    offset.y = Math.sin(this.wanderAngle) * offset.length()
+
+    this.wanderAngle += Math.random() * wanderRange - wanderRange * .5;
+    steerVector.add(offset)
+    return steerVector
+  }
+
+  lookWhereGoing(smoothing = true) {
+    // var direction = this.mesh.position.clone().add(this.velocity.clone())
+    var direction = this.velocity.clone()
+    if (smoothing) {
+        if (this.velocitySamples.length == numSamplesForSmoothing) {
+            this.velocitySamples.shift();
+        }
+
+        this.velocitySamples.push(this.velocity.clone());
+        direction.set(0, 0, 0);
+        this.velocitySamples.forEach(sample => {
+          direction.add(sample)
+        })
+        direction.divideScalar(this.velocitySamples.length)
+        // direction = this.mesh.position.clone().add(direction)
+    }
+
+    direction.add(this.mesh.position);
+    this.mesh.lookAt(direction)
   }
 }
