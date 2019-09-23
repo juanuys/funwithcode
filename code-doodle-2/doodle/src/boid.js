@@ -6,7 +6,7 @@ const maxSpeed = 3
 
 const numSamplesForSmoothing = 20
 
-const wanderWeight = 1
+const wanderWeight = 0.2
 // Steer towards the average position of nearby boids
 const cohesionWeight = 1
 // Steers away from nearby boids
@@ -164,7 +164,7 @@ export default class Boid {
         raycaster = new THREE.Raycaster(originPoint, direction, 0, 50);
         var spectrumCollision = raycaster.intersectObject(collisionResults[0].object)
         if (spectrumCollision.length === 0) {
-          this.acceleration.add(direction)
+          this.acceleration.add(direction.clone().multiplyScalar(100))
           break
         }
       }

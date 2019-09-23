@@ -170,7 +170,7 @@ function init() {
 
   // BOIDS
   // const numberOfBoids = 100
-  const numberOfBoids = 200
+  const numberOfBoids = 300
   boidManager = new BoidManager(scene, numberOfBoids, obstacles, lure)
   boidManager.boids.forEach(boid => {
     scene.add(boid.mesh)
