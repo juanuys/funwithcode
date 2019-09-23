@@ -332,6 +332,7 @@ export default class Boid {
     if (distance < 5) {
       // when we reach the target, set a new random target
       this.wanderTarget = new THREE.Vector3(this.rndCoord(), this.rndCoord(), this.rndCoord())
+      counter = 0
     } else if (counter > 500) {
       this.wanderTarget = new THREE.Vector3(this.rndCoord(), this.rndCoord(), this.rndCoord())
       counter = 0

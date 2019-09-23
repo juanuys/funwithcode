@@ -2,12 +2,19 @@
  * 1 unit = 1 cm
  */
 
+// import { THREE } from "three"
 var THREE = require('three')
-import { OrbitControls } from './orbitcontrols';
+import { OrbitControls } from './lib/controls/OrbitControls';
+import { RenderPass } from './lib/postprocessing/RenderPass';
+import { ShaderPass } from './lib/postprocessing/ShaderPass';
+import { EffectComposer } from './lib/postprocessing/EffectComposer';
+import { DepthLimitedBlurShader } from './lib/shaders/DepthLimitedBlurShader';
+import { GlitchPass } from './lib/shaders/GlitchPass';
 import BoundingBox from './src/boundingbox'
 import BoidManager from './src/boidManager';
 
 var scene, camera, renderer, frustum, controls, fishBowl, light, lure, boidManager, clock;
+var composer
 
 var staticCone
 
@@ -15,7 +22,7 @@ function init() {
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
   // camera = new THREE.OrthographicCamera( window.innerWidth / - 4, window.innerWidth / 4, window.innerHeight / 4, window.innerHeight / - 4, 0.1, 1000 );
-  camera.position.z  = 500;
+  camera.position.z = 500;
 
   // frustum stuff
   camera.updateMatrix();
@@ -124,6 +131,18 @@ function init() {
   // staticCone.position.copy(new THREE.Vector3(100, 100, 100))
   // scene.add( staticCone );
   // staticCone.lookAt(new THREE.Vector3(0,0,0))
+
+  // COMPOSER + PASSES
+  composer = new EffectComposer(renderer)
+
+  var renderPass = new RenderPass(scene, camera)
+  composer.addPass(renderPass)
+  renderPass.renderToScreen = true;
+
+  // var pass1 = new GlitchPass(64)
+  // // pass1.goWild = true
+  // composer.addPass(pass1)
+  // pass1.renderToScreen = true
 }
 
 // loop vars
@@ -155,7 +174,8 @@ function render() {
     update(delta)
   }
 
-  renderer.render(scene, camera);
+  // renderer.render(scene, camera);
+  composer.render()
 }
 
 var animate = function () {
@@ -180,15 +200,15 @@ window.addEventListener('resize', function () {
 
 document.addEventListener("keydown", onDocumentKeyDown, false);
 function onDocumentKeyDown(event) {
-    var keyCode = event.which;
-    if (keyCode == 32) {
-        paused = !paused;
+  var keyCode = event.which;
+  if (keyCode == 32) {
+    paused = !paused;
 
-        // disable slow-pan so when animation is resumed, the viewer has the controls.
-        if (slowPanEnabled) {
-          slowPanEnabled = false
-        }
+    // disable slow-pan so when animation is resumed, the viewer has the controls.
+    if (slowPanEnabled) {
+      slowPanEnabled = false
     }
+  }
 };
 
 
