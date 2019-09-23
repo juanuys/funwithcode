@@ -1,36 +1,30 @@
 import { throws } from 'assert';
 
-var THREE = require('three')
+const THREE = require('three')
 
 const minSpeed = 1
-const maxSpeed = 3
-const maxSteerForce = 5
-
-const maxForceSeek = 1
-const maxForceSeparation = 10
-
-const wanderDistance = 10;
-const wanderRadius = 5;
-const wanderRange = 1;
+const maxSpeed = 5
 
 const numSamplesForSmoothing = 20
 
-const wanderWeight = 0.25
-const cohesionWeight = 1.2
-const separationWeight = 0.1
+const wanderWeight = 1
+// Steer towards the average position of nearby boids
+const cohesionWeight = 1
+// Steers away from nearby boids
+const separationWeight = 1
+// Adopt the average velocity of bearby boids
 const alignmentWeight = 1
 
-var counter = 0
-
-const nullSteerVector = new THREE.Vector3()
-
-const clamp = function(it, min, max) {
+const clamp = function (it, min, max) {
   return Math.min(Math.max(it, min), max);
 };
 
 export default class Boid {
-  constructor(target, position, quaternion, colour, followTarget = false) {
-    this.mesh = this.getBoid(position, quaternion, colour)
+  constructor(scene, target, position, quaternion, colour, followTarget = false) {
+    this.scene = scene
+    const { mesh, geometry } = this.getBoid(position, quaternion, colour)
+    this.mesh = mesh
+    this.geometry = geometry
     this.target = target
 
     // re-usable acceleration vector
@@ -38,9 +32,7 @@ export default class Boid {
 
     // velocity is speed in a given direction, and in the update method we'll
     // compute an acceleration that will change the velocity
-    var startSpeed = (minSpeed + maxSpeed) / 2;
-    // this.velocity = this.mesh.up.multiplyScalar(startSpeed);
-    this.velocity = new THREE.Vector3(0, 0, 0);
+    this.velocity = new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
 
     // this.forward = new THREE.Vector3( 0, 0, 1 )
 
@@ -52,7 +44,12 @@ export default class Boid {
     // remember the last however many velocities so we can smooth the heading of the boid
     this.velocitySamples = []
 
-    this.wanderTarget = nullSteerVector
+    this.wanderTarget = new THREE.Vector3(mesh.position.x, mesh.position.y, 300)
+
+    this.debug = false
+    this.counter = 0
+    this.wanderCounter = 0
+    this.arrows = []
   }
 
   getBoid(position = new THREE.Vector3(0, 0, 0), quaternion = null, color = 0x156289) {
@@ -75,7 +72,7 @@ export default class Boid {
       mesh.quaternion.copy(quaternion)
     }
 
-    return mesh
+    return { mesh, geometry }
   }
 
   /**
@@ -90,41 +87,8 @@ export default class Boid {
    * - cohesion: steer to move towards the average position (center of mass) of local flockmates
    */
   update(delta, neighbours, obstacles) {
-
-    counter++
-
-    // if (counter < 250) {
-    //   this.acceleration.add(this.seek(delta, new THREE.Vector3(0, 100, 200)))
-    // } else {
-    //   this.acceleration.add(this.seek(delta, new THREE.Vector3(-100, 0, 100)))
-    // }
-
-    // var target = new THREE.Vector3(0, 100, 200)
-    // var distance = this.mesh.position.distanceTo(target)
-    // if (distance > 5) {
-    //   this.acceleration.add(this.seek(delta, target))
-    // } else {
-    //   console.log(this.velocity, this.velocity.length())
-    // }
-
-
-    // this.acceleration.add(this.seek(delta, target))
-    // this.acceleration.add(nullSteerVector)
-    // console.log(this.mesh.position)
-
-
-
-    // this.applyAcceleration(delta)
-    // this.lookWhereGoing()
-
-
-    // this.mesh.lookAt(this.velocity)
-
-
-    // const head = this.velocity.clone();
-    // head.add(this.mesh.position);
-    // this.mesh.lookAt(head);
-
+    this.counter++
+    this.wanderCounter++
 
     // fly towards the target
     if (this.target && this.followTarget) {
@@ -138,9 +102,6 @@ export default class Boid {
       // "flee" would use sub
       this.acceleration.add(accelerationTowardsTarget)
     } else {
-      // just fly forward for now
-      // this.mesh.translateY(minSpeed);
-
       this.acceleration.add(this.wander(delta).multiplyScalar(wanderWeight))
     }
 
@@ -151,7 +112,53 @@ export default class Boid {
     this.acceleration.add(this.cohesion(delta, neighbours).multiplyScalar(cohesionWeight))
 
     // steering behaviour: separation
-    this.acceleration.add(this.separation(delta, neighbours, obstacles).multiplyScalar(separationWeight))
+    this.acceleration.add(this.separation(delta, neighbours).multiplyScalar(separationWeight))
+
+    // avoid collisions with world obstacles
+    var originPoint = this.mesh.position.clone();
+    // this.geometry.vertices.forEach(vertex => {
+    //   var localVertex = vertex.clone();
+    //   var globalVertex = localVertex.applyMatrix4(this.mesh.matrix);
+    //   var directionVector = globalVertex.sub(this.mesh.position);
+
+    //   var raycaster = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
+    //   const arrow = new THREE.ArrowHelper(raycaster.ray.direction, raycaster.ray.origin, 50, 0xff0000)
+    //   arrow.name = "raycaster-arrow"
+    //   this.scene.add( arrow);
+    //   var collisionResults = raycaster.intersectObjects(obstacles.map(o => o.mesh));
+    //   if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+    //     console.log("hit")
+    //   }
+
+    //   this.scene.remove(this.scene.getObjectByName(arrow.name))
+    // })
+
+
+    var localVertex = this.geometry.vertices[0].clone()
+    var globalVertex = localVertex.applyMatrix4(this.mesh.matrix);
+    var directionVector = globalVertex.sub(this.mesh.position);
+    var raycaster = new THREE.Raycaster(originPoint, directionVector.clone().normalize(), 0, 50);
+
+    if (this.debug) {
+      const arrow = new THREE.ArrowHelper(raycaster.ray.direction, raycaster.ray.origin, 50, 0xff0000)
+      if (this.counter % 50 === 0) {
+        arrow.name = Math.random().toString(36).substring(2, 15)
+        this.arrows.push(arrow)
+        this.scene.add(arrow);
+        if (this.arrows.length > 3) {
+          var toBeRemoved = this.arrows.shift()
+          this.scene.remove(this.scene.getObjectByName(toBeRemoved.name))
+        }
+      }
+    }
+
+    // obstacle meshes are Group, and the first child is the mesh we want to ray-trace
+    var collisionResults = raycaster.intersectObjects(obstacles.map(o => o.mesh.children[0]));
+    if (collisionResults.length > 0) {
+      // flee from the object
+      var seek = this.seek(delta, collisionResults[0].point)
+      this.acceleration.add(seek.negate().multiplyScalar(100))
+    }
 
     this.applyAcceleration(delta)
 
@@ -159,25 +166,10 @@ export default class Boid {
   }
 
   applyAcceleration(delta) {
-    // if (this.velocity.length() < 1) {
-    //   this.velocity = new THREE.Vector3()
-    // }
-    // console.log(this.acceleration)
-    // console.log("this.acceleration.length() >", this.acceleration.length())
-    this.acceleration.clampLength(0, maxSteerForce);
-    // console.log("this.acceleration.length() <", this.acceleration.length())
-    // this.velocity.add(this.acceleration.multiplyScalar(delta));
     this.velocity.add(this.acceleration);
     this.acceleration.set(0, 0, 0); // reset
-
-    // console.log("this.velocity.length() >", this.velocity.length())
-
-    // console.log(this.velocity.length())
     this.velocity.clampLength(minSpeed, maxSpeed)
-
-    // console.log("this.velocity.length() <", this.velocity.length())
     this.mesh.position.add(this.velocity)
-    // console.log(this.velocity)
   }
 
   /**
@@ -186,23 +178,14 @@ export default class Boid {
    * @param {*} delta
    * @param {*} target
    */
-  seek (delta, target) {
-    var steerVector = nullSteerVector
-    // // if distance between boid and target is small, do nothing
-    // var distance = this.mesh.position.distanceTo(target)
-    // if (distance < 5) {
-    //   // do nothing, but remember that the old velocity is maintained.
-    // } else {
-    //   // console.log(distance)
-    //   steerVector = target.clone().sub(this.mesh.position);
-    //   steerVector.normalize().sub(this.velocity);
-    //   steerVector.multiplyScalar(delta)
-    // }
+  seek(delta, target) {
+    var steerVector = target.clone().sub(this.mesh.position);
+    steerVector.normalize()
+    steerVector.multiplyScalar(maxSpeed)
+    steerVector.sub(this.velocity);
 
-    steerVector = target.clone().sub(this.mesh.position);
-    steerVector.normalize().sub(this.velocity);
-    steerVector.multiplyScalar(delta)
-
+    var maxForce = delta * 5
+    steerVector.clampLength(0, maxForce)
     return steerVector
   }
 
@@ -210,55 +193,64 @@ export default class Boid {
    * From the paper:
    * Collision Avoidance: avoid collisions with nearby flockmates (aka separation)
    *
-   * We've generalised to avoid collision with other arbritrary obstacles.
-   *
-   * Simply look at each obstacle, and if it's within a defined small distance (say 100 units),
+   * Simply look at each neighbour, and if it's within a defined small distance (say 100 units),
    * then move it as far away again as it already is. This is done by subtracting from a vector
-   * "steerVector" (initialised to zero) the displacement of each obstacle which is nearby.
-   * The vector "steerVector" is then later added to the current position to move the boid away from
-   * obstacles near it.
+   * "steerVector" (initialised to zero) the displacement of each neighbour which is nearby.
    */
-  separation(delta, neighbours, obstacles, range = 30) {
+  separation(delta, neighbours, range = 30) {
 
     const steerVector = new THREE.Vector3();
 
     var neighbourInRangeCount = 0
 
-    neighbours.concat(obstacles).forEach(obstacle => {
-
-      if (obstacle === null || typeof obstacle === 'undefined') return
+    neighbours.forEach(neighbour => {
 
       // skip same object
-      if (obstacle.mesh.id === this.mesh.id) return;
+      if (neighbour.mesh.id === this.mesh.id) return;
 
-      const distance = obstacle.mesh.position.distanceTo(this.mesh.position)
+      const distance = neighbour.mesh.position.distanceTo(this.mesh.position)
       if (distance <= range) {
-        steerVector.add(obstacle.mesh.position.clone().sub(this.mesh.position));
-          neighbourInRangeCount++;
+        var diff = this.mesh.position.clone().sub(neighbour.mesh.position)
+        // diff.normalize()
+        diff.divideScalar(distance) // weight by distance
+        steerVector.add(diff);
+        neighbourInRangeCount++;
       }
     })
 
-    if (neighbourInRangeCount > 0) {
+    if (neighbourInRangeCount !== 0) {
       steerVector.divideScalar(neighbourInRangeCount)
-      steerVector.negate()
+      steerVector.normalize()
+      steerVector.multiplyScalar(maxSpeed)
+      var maxForce = delta * 5
+      steerVector.clampLength(0, maxForce);
     }
 
-    // don't normalise, as the boid really doesn't want to crash into a neighbour,
-    // so a larger magnitude must have an effect
-    // steerVector.normalize();
+    // if (steerVector.length() > 0) {
+    //   // Reynolds: Steering = Desired - Velocity
+    //   steerVector.normalize();
+    //   steerVector.multiplyScalar(maxSpeed);
+    //   steerVector.sub(this.velocity);
 
-    // can't find a nice way to integrate delta
-    steerVector.multiplyScalar(delta)
+    //   var maxForce = delta * 5
+    //   steerVector.limit(maxForce);
+    // }
+
+    // steerVector.normalize();
+    // var maxSeparation = 30
+    // steerVector.multiplyScalar(maxSeparation);
+
     return steerVector;
   }
 
   /**
    * Produces a steering force that keeps a boid's heading aligned with its neighbours.
+   * (average velocity)
    *
    * @param {*} neighbours
    */
   alignment(delta, neighbours, range = 50) {
-    const steerVector = new THREE.Vector3();
+    let steerVector = new THREE.Vector3();
     const averageDirection = new THREE.Vector3();
 
     var neighboursInRangeCount = 0;
@@ -271,28 +263,29 @@ export default class Boid {
       const distance = neighbour.mesh.position.distanceTo(this.mesh.position)
       if (distance <= range) {
         neighboursInRangeCount++
-        var neighbourDirection = neighbour.velocity.clone().normalize()
-        averageDirection.add(neighbourDirection);
+        averageDirection.add(neighbour.velocity.clone());
       }
     })
 
-		if (neighboursInRangeCount > 0) {
-			averageDirection.divideScalar(neighboursInRangeCount);
-      var myDirection = this.velocity.clone().normalize()
-			steerVector.subVectors(averageDirection, myDirection);
+    if (neighboursInRangeCount > 0) {
+      averageDirection.divideScalar(neighboursInRangeCount);
+      averageDirection.normalize()
+      averageDirection.multiplyScalar(maxSpeed)
+
+      steerVector = averageDirection.sub(this.velocity)
+      var maxForce = delta * 5
+      steerVector.clampLength(0, maxForce)
     }
 
-    steerVector.multiplyScalar(delta)
     return steerVector;
   }
 
   /**
-   * Produces a steering force that moves a boid toward the center of mass of its neighbours.
+   * Produces a steering force that moves a boid toward the average position of its neighbours.
    *
    * @param {*} neighbours
    */
-  cohesion(delta, neighbours, range = 30) {
-    var steerVector
+  cohesion(delta, neighbours, range = 50) {
     const centreOfMass = new THREE.Vector3();
 
     var neighboursInRangeCount = 0;
@@ -313,14 +306,10 @@ export default class Boid {
       centreOfMass.divideScalar(neighboursInRangeCount);
 
       // "seek" the centre of mass
-      steerVector = this.seek(delta, centreOfMass)
-      steerVector.normalize()
+      return this.seek(delta, centreOfMass)
     } else {
-      steerVector = new THREE.Vector3()
+      return new THREE.Vector3()
     }
-
-    steerVector.multiplyScalar(delta)
-    return steerVector;
   }
 
   rndCoord(range = 195) {
@@ -332,43 +321,30 @@ export default class Boid {
     if (distance < 5) {
       // when we reach the target, set a new random target
       this.wanderTarget = new THREE.Vector3(this.rndCoord(), this.rndCoord(), this.rndCoord())
-      counter = 0
-    } else if (counter > 500) {
+      this.wanderCounter = 0
+    } else if (this.wanderCounter > 500) {
       this.wanderTarget = new THREE.Vector3(this.rndCoord(), this.rndCoord(), this.rndCoord())
-      counter = 0
+      this.wanderCounter = 0
     }
 
     return this.seek(delta, this.wanderTarget)
-  }
-
-  wander2(delta) {
-    var steerVector = this.velocity.clone().normalize().setLength(wanderDistance);
-    var offset = new THREE.Vector3(1, 1, 1);
-    offset.setLength(wanderRadius);
-    offset.x = Math.sin(this.wanderAngle) * offset.length()
-    offset.z = Math.cos(this.wanderAngle) * offset.length()
-    offset.y = Math.sin(this.wanderAngle) * offset.length()
-
-    this.wanderAngle += Math.random() * wanderRange - wanderRange * .5;
-    steerVector.add(offset)
-    return steerVector
   }
 
   lookWhereGoing(smoothing = true) {
     // var direction = this.mesh.position.clone().add(this.velocity.clone())
     var direction = this.velocity.clone()
     if (smoothing) {
-        if (this.velocitySamples.length == numSamplesForSmoothing) {
-            this.velocitySamples.shift();
-        }
+      if (this.velocitySamples.length == numSamplesForSmoothing) {
+        this.velocitySamples.shift();
+      }
 
-        this.velocitySamples.push(this.velocity.clone());
-        direction.set(0, 0, 0);
-        this.velocitySamples.forEach(sample => {
-          direction.add(sample)
-        })
-        direction.divideScalar(this.velocitySamples.length)
-        // direction = this.mesh.position.clone().add(direction)
+      this.velocitySamples.push(this.velocity.clone());
+      direction.set(0, 0, 0);
+      this.velocitySamples.forEach(sample => {
+        direction.add(sample)
+      })
+      direction.divideScalar(this.velocitySamples.length)
+      // direction = this.mesh.position.clone().add(direction)
     }
 
     direction.add(this.mesh.position);

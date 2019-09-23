@@ -8,10 +8,10 @@ export default class BoidManager {
    * @param {*} obstacles other obstacles in the world to consider when avoiding collisions
    * @param {*} target a target for all boids to move towards
    */
-  constructor(numberOfBoids = 20, obstacles = [], target = null) {
+  constructor(scene, numberOfBoids = 20, obstacles = [], target = null) {
 
     // create the boids
-    this.initBoids(numberOfBoids, target)
+    this.initBoids(scene, numberOfBoids, target)
 
     // for each boid, add the other boids to its collidableMeshList, and also add
     // the meshes from the common collidableMeshList
@@ -19,7 +19,7 @@ export default class BoidManager {
     this.obstacles = obstacles
   }
 
-  initBoids(numberOfBoids, target) {
+  initBoids(scene, numberOfBoids, target) {
     this.boids = this.boids || [];
 
     var randomX, randomY, randomZ, randomAngle, colour, followTarget, quaternion
@@ -49,10 +49,12 @@ export default class BoidManager {
 
       var position = new THREE.Vector3(randomX, randomY, randomZ)
 
-      var boid = new Boid(target, position, quaternion, colour, followTarget);
+      var boid = new Boid(scene, target, position, quaternion, colour, followTarget);
       this.boids.push(boid)
     }
   }
+
+  // initSphereCast
 
   update(delta) {
     this.boids.forEach(boid => {

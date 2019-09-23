@@ -13,9 +13,9 @@ import { GlitchPass } from './lib/shaders/GlitchPass';
 import BoundingBox from './src/boundingbox'
 import BoidManager from './src/boidManager';
 
-var scene, camera, renderer, frustum, controls, fishBowl, light, lure, boidManager, clock;
+var scene, camera, renderer, frustum, controls, light, lure, boidManager, clock;
 var composer
-
+var obstacles = []
 var staticCone
 
 function init() {
@@ -57,9 +57,76 @@ function init() {
   // mesh3.position.y = -200;
   // scene.add(mesh3);
 
-  // FISHBOWL
-  // fishBowl = new BoundingBox(400, 400, 400, 0xa33aff);
-  // scene.add(fishBowl.mesh)
+  // WORLD OBSTACLES
+  var hasObstacles = true
+  if (hasObstacles) {
+    {
+      var obs1 = new BoundingBox(50, 50, 50, 0xFFFFFF);
+      obs1.mesh.position.set(200, 200, 200)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+    {
+      var obs1 = new BoundingBox(50, 100, 50, 0xFFFFFF);
+      obs1.mesh.position.set(100, 100, -200)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+
+    {
+      var obs1 = new BoundingBox(100, 50, 50, 0xFFFFFF);
+      obs1.mesh.position.set(-200, 150, 200)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+    {
+      var obs1 = new BoundingBox(50, 50, 50, 0xFFFFFF);
+      obs1.mesh.position.set(-150, 150, -200)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+
+    {
+      var obs1 = new BoundingBox(50, 100, 100, 0xFFFFFF);
+      obs1.mesh.position.set(-20, 300, -20)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+
+
+    {
+      var obs1 = new BoundingBox(50, 50, 50, 0x999999);
+      obs1.mesh.position.set(150, -200, 200)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+    {
+      var obs1 = new BoundingBox(50, 100, 100, 0x999999);
+      obs1.mesh.position.set(80, -100, -180)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+
+    {
+      var obs1 = new BoundingBox(100, 50, 100, 0x999999);
+      obs1.mesh.position.set(-220, -150, 180)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+    {
+      var obs1 = new BoundingBox(100, 50, 50, 0x999999);
+      obs1.mesh.position.set(-150, -150, -150)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+
+    {
+      var obs1 = new BoundingBox(100, 50, 100, 0x999999);
+      obs1.mesh.position.set(20, -300, -20)
+      scene.add(obs1.mesh)
+      obstacles.push(obs1)
+    }
+  }
 
   // LIGHTS
 
@@ -102,7 +169,9 @@ function init() {
   // scene.add(lightHelper);
 
   // BOIDS
-  boidManager = new BoidManager(200, [fishBowl], lure)
+  // const numberOfBoids = 100
+  const numberOfBoids = 100
+  boidManager = new BoidManager(scene, numberOfBoids, obstacles, lure)
   boidManager.boids.forEach(boid => {
     scene.add(boid.mesh)
   })
@@ -215,3 +284,15 @@ function onDocumentKeyDown(event) {
 init()
 
 animate();
+
+// var boid1 = new THREE.Vector3()
+// var boid2 = new THREE.Vector3(50, 50, 50)
+
+// var distance = boid1.distanceTo(boid2)
+// console.log(distance)
+// var diff = boid1.clone().sub(boid2)
+// console.log('b1 - b2', diff)
+// diff.normalize()
+// console.log('norm', diff)
+// diff.divideScalar(1/distance) // weight by distance
+// console.log('div dist', diff)
