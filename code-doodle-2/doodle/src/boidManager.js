@@ -54,8 +54,6 @@ export default class BoidManager {
     }
   }
 
-  // initSphereCast
-
   update(delta) {
     this.boids.forEach(boid => {
       boid.update(delta, this.boids, this.obstacles)

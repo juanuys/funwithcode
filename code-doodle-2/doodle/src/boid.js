@@ -1,9 +1,8 @@
-import { throws } from 'assert';
-
 const THREE = require('three')
+import {utils} from './util'
 
 const minSpeed = 1
-const maxSpeed = 5
+const maxSpeed = 3
 
 const numSamplesForSmoothing = 20
 
@@ -156,8 +155,19 @@ export default class Boid {
     var collisionResults = raycaster.intersectObjects(obstacles.map(o => o.mesh.children[0]));
     if (collisionResults.length > 0) {
       // flee from the object
-      var seek = this.seek(delta, collisionResults[0].point)
-      this.acceleration.add(seek.negate().multiplyScalar(100))
+      // var seek = this.seek(delta, collisionResults[0].point)
+      // this.acceleration.add(seek.negate().multiplyScalar(100))
+
+      // gently dodge object
+      for (var i = 0; i < utils.sphereCastDirections.length; i++) {
+        const direction = utils.sphereCastDirections[i]
+        raycaster = new THREE.Raycaster(originPoint, direction, 0, 50);
+        var spectrumCollision = raycaster.intersectObject(collisionResults[0].object)
+        if (spectrumCollision.length === 0) {
+          this.acceleration.add(direction)
+          break
+        }
+      }
     }
 
     this.applyAcceleration(delta)
@@ -312,7 +322,7 @@ export default class Boid {
     }
   }
 
-  rndCoord(range = 195) {
+  rndCoord(range = 295) {
     return (Math.random() - 0.5) * range * 2
   }
   wander(delta) {
