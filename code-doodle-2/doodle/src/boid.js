@@ -16,6 +16,9 @@ const alignmentWeight = 1
 
 const visionRange = 150
 
+const origin = new THREE.Vector3()
+const boundaryRadius = 800
+
 const clamp = function (it, min, max) {
   return Math.min(Math.max(it, min), max);
 };
@@ -99,7 +102,11 @@ export default class Boid {
       // "flee" would use sub
       this.acceleration.add(accelerationTowardsTarget)
     } else {
-      this.acceleration.add(this.wander(delta).multiplyScalar(wanderWeight))
+      if (this.mesh.position.distanceTo(origin) > boundaryRadius) {
+        this.acceleration.add(this.wander(delta).multiplyScalar(2))
+      } else {
+        this.acceleration.add(this.wander(delta).multiplyScalar(wanderWeight))
+      }
     }
 
     // steering behaviour: alignment

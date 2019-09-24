@@ -44,12 +44,12 @@ function init() {
     utils.addObstacle(obstacles, scene, 50, 100, 50, 0xFFFFFF, 100, 100, -200)
     utils.addObstacle(obstacles, scene, 100, 50, 50, 0xFFFFFF, -200, 150, 200)
     utils.addObstacle(obstacles, scene, 50, 50, 50, 0xFFFFFF, -150, 150, -200)
-    utils.addObstacle(obstacles, scene, 50, 100, 100, 0xFFFFFF, -20, 300, -20)
-    utils.addObstacle(obstacles, scene, 50, 50, 50, 0x999999, 150, -200, 200)
-    utils.addObstacle(obstacles, scene, 50, 100, 100, 0x999999, 80, -100, -180)
-    utils.addObstacle(obstacles, scene, 100, 50, 100, 0x999999, -220, -150, 180)
-    utils.addObstacle(obstacles, scene, 100, 50, 50, 0x999999, -150, -150, -150)
-    utils.addObstacle(obstacles, scene, 100, 50, 100, 0x999999, 20, -300, -20)
+    utils.addObstacle(obstacles, scene, 50, 100, 100, 0xA399EE, -20, 300, -20)
+    utils.addObstacle(obstacles, scene, 50, 50, 50, 0x555555, 150, -200, 200)
+    utils.addObstacle(obstacles, scene, 50, 100, 100, 0x555555, 80, -100, -180)
+    utils.addObstacle(obstacles, scene, 100, 50, 100, 0x555555, -220, -150, 180)
+    utils.addObstacle(obstacles, scene, 100, 50, 50, 0x555555, -150, -150, -150)
+    utils.addObstacle(obstacles, scene, 100, 50, 100, 0x555555, 20, -300, -20)
   }
 
   // LIGHTS
