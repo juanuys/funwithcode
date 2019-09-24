@@ -1,6 +1,6 @@
 var THREE = require('three')
 
-export default class BoundingBox {
+export default class Box {
   constructor(width = 100, height = 100, depth = 100, color = 0xffffff) {
       const geometry = new THREE.BoxGeometry(width, height, depth, 1, 1, 1);
 

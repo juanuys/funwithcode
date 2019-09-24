@@ -2,7 +2,7 @@ const THREE = require('three')
 import {utils} from './util'
 
 const minSpeed = 1
-const maxSpeed = 3
+const maxSpeed = 5
 
 const numSamplesForSmoothing = 20
 
@@ -13,6 +13,8 @@ const cohesionWeight = 1
 const separationWeight = 1
 // Adopt the average velocity of bearby boids
 const alignmentWeight = 1
+
+const visionRange = 150
 
 const clamp = function (it, min, max) {
   return Math.min(Math.max(it, min), max);
@@ -33,12 +35,8 @@ export default class Boid {
     // compute an acceleration that will change the velocity
     this.velocity = new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2);
 
-    // this.forward = new THREE.Vector3( 0, 0, 1 )
-
-    // if a boid is the leader, it will follow the target (and set the course, so to speak)
+    // whether this boid will follow the target
     this.followTarget = followTarget;
-
-    this.wanderAngle = 0
 
     // remember the last however many velocities so we can smooth the heading of the boid
     this.velocitySamples = []
@@ -115,28 +113,10 @@ export default class Boid {
 
     // avoid collisions with world obstacles
     var originPoint = this.mesh.position.clone();
-    // this.geometry.vertices.forEach(vertex => {
-    //   var localVertex = vertex.clone();
-    //   var globalVertex = localVertex.applyMatrix4(this.mesh.matrix);
-    //   var directionVector = globalVertex.sub(this.mesh.position);
-
-    //   var raycaster = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
-    //   const arrow = new THREE.ArrowHelper(raycaster.ray.direction, raycaster.ray.origin, 50, 0xff0000)
-    //   arrow.name = "raycaster-arrow"
-    //   this.scene.add( arrow);
-    //   var collisionResults = raycaster.intersectObjects(obstacles.map(o => o.mesh));
-    //   if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
-    //     console.log("hit")
-    //   }
-
-    //   this.scene.remove(this.scene.getObjectByName(arrow.name))
-    // })
-
-
     var localVertex = this.geometry.vertices[0].clone()
     var globalVertex = localVertex.applyMatrix4(this.mesh.matrix);
     var directionVector = globalVertex.sub(this.mesh.position);
-    var raycaster = new THREE.Raycaster(originPoint, directionVector.clone().normalize(), 0, 50);
+    var raycaster = new THREE.Raycaster(originPoint, directionVector.clone().normalize(), 0, visionRange);
 
     if (this.debug) {
       const arrow = new THREE.ArrowHelper(raycaster.ray.direction, raycaster.ray.origin, 50, 0xff0000)
@@ -161,7 +141,7 @@ export default class Boid {
       // gently dodge object
       for (var i = 0; i < utils.sphereCastDirections.length; i++) {
         const direction = utils.sphereCastDirections[i]
-        raycaster = new THREE.Raycaster(originPoint, direction, 0, 50);
+        raycaster = new THREE.Raycaster(originPoint, direction, 0, visionRange);
         var spectrumCollision = raycaster.intersectObject(collisionResults[0].object)
         if (spectrumCollision.length === 0) {
           this.acceleration.add(direction.clone().multiplyScalar(100))
@@ -221,7 +201,6 @@ export default class Boid {
       const distance = neighbour.mesh.position.distanceTo(this.mesh.position)
       if (distance <= range) {
         var diff = this.mesh.position.clone().sub(neighbour.mesh.position)
-        // diff.normalize()
         diff.divideScalar(distance) // weight by distance
         steerVector.add(diff);
         neighbourInRangeCount++;
@@ -235,20 +214,6 @@ export default class Boid {
       var maxForce = delta * 5
       steerVector.clampLength(0, maxForce);
     }
-
-    // if (steerVector.length() > 0) {
-    //   // Reynolds: Steering = Desired - Velocity
-    //   steerVector.normalize();
-    //   steerVector.multiplyScalar(maxSpeed);
-    //   steerVector.sub(this.velocity);
-
-    //   var maxForce = delta * 5
-    //   steerVector.limit(maxForce);
-    // }
-
-    // steerVector.normalize();
-    // var maxSeparation = 30
-    // steerVector.multiplyScalar(maxSeparation);
 
     return steerVector;
   }
@@ -341,7 +306,6 @@ export default class Boid {
   }
 
   lookWhereGoing(smoothing = true) {
-    // var direction = this.mesh.position.clone().add(this.velocity.clone())
     var direction = this.velocity.clone()
     if (smoothing) {
       if (this.velocitySamples.length == numSamplesForSmoothing) {
@@ -354,7 +318,6 @@ export default class Boid {
         direction.add(sample)
       })
       direction.divideScalar(this.velocitySamples.length)
-      // direction = this.mesh.position.clone().add(direction)
     }
 
     direction.add(this.mesh.position);
